@@ -335,20 +335,38 @@
             </div>
             <p id="credits-modal-status" class="text-xs text-slate-400"></p>
             <div class="space-y-2">
-                <button onclick="buyCreditPack('pack_10')" class="w-full flex items-center justify-between p-3 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition text-left">
-                    <span class="text-sm font-semibold text-slate-100">10 crédits</span>
-                    <span class="text-sm font-bold text-amber-400">5,00 $</span>
-                </button>
-                <button onclick="buyCreditPack('pack_50')" class="w-full flex items-center justify-between p-3 bg-slate-800 hover:bg-slate-700 rounded-xl border border-amber-500/40 transition text-left relative">
-                    <span class="text-sm font-semibold text-slate-100">50 crédits <span class="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full ml-1">Populaire</span></span>
-                    <span class="text-sm font-bold text-amber-400">20,00 $</span>
-                </button>
-                <button onclick="buyCreditPack('pack_150')" class="w-full flex items-center justify-between p-3 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition text-left">
-                    <span class="text-sm font-semibold text-slate-100">150 crédits</span>
-                    <span class="text-sm font-bold text-amber-400">50,00 $</span>
-                </button>
+                <div class="p-3 bg-slate-800 rounded-xl border border-slate-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-semibold text-slate-100">10 crédits</span>
+                        <span class="text-sm font-bold text-amber-400">5,00 $</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="buyCreditPack('pack_10')" class="flex-1 text-xs py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition text-white font-medium">💳 Carte</button>
+                        <button onclick="buyCreditPackCrypto('pack_10')" class="flex-1 text-xs py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 transition text-amber-300 font-medium">₿ Crypto</button>
+                    </div>
+                </div>
+                <div class="p-3 bg-slate-800 rounded-xl border border-amber-500/40">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-semibold text-slate-100">50 crédits <span class="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full ml-1">Populaire</span></span>
+                        <span class="text-sm font-bold text-amber-400">20,00 $</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="buyCreditPack('pack_50')" class="flex-1 text-xs py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition text-white font-medium">💳 Carte</button>
+                        <button onclick="buyCreditPackCrypto('pack_50')" class="flex-1 text-xs py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 transition text-amber-300 font-medium">₿ Crypto</button>
+                    </div>
+                </div>
+                <div class="p-3 bg-slate-800 rounded-xl border border-slate-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-semibold text-slate-100">150 crédits</span>
+                        <span class="text-sm font-bold text-amber-400">50,00 $</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="buyCreditPack('pack_150')" class="flex-1 text-xs py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition text-white font-medium">💳 Carte</button>
+                        <button onclick="buyCreditPackCrypto('pack_150')" class="flex-1 text-xs py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 transition text-amber-300 font-medium">₿ Crypto</button>
+                    </div>
+                </div>
             </div>
-            <p class="text-[10px] text-slate-500 text-center">Paiement sécurisé par Stripe. Redirection vers une page de paiement externe.</p>
+            <p class="text-[10px] text-slate-500 text-center">Paiement sécurisé par Stripe (carte) ou NOWPayments (crypto). Redirection vers une page de paiement externe.</p>
         </div>
     </div>
 
@@ -563,6 +581,24 @@
             } catch (err) {
                 console.error(err);
                 showToast("Erreur lors de la création de la session de paiement.", true);
+            }
+        }
+
+        async function buyCreditPackCrypto(packId) {
+            if (!FIREBASE_IS_CONFIGURED || !fbFunctions) {
+                showToast("Configurez Firebase et NOWPayments pour activer les achats crypto (voir DOCUMENTATION.html).", true);
+                return;
+            }
+            try {
+                const createInvoice = fbFunctions.httpsCallable('createCryptoInvoice');
+                const result = await createInvoice({
+                    packId,
+                    successUrl: window.location.href
+                });
+                window.location.href = result.data.url;
+            } catch (err) {
+                console.error(err);
+                showToast("Erreur lors de la création de la facture crypto.", true);
             }
         }
 

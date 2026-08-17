@@ -2,6 +2,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
 const Stripe = require("stripe");
+const crypto = require("crypto");
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -138,6 +139,112 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
         credits: admin.firestore.FieldValue.increment(pack.credits)
       }, { merge: true });
       console.log(`Crédité ${pack.credits} crédits à l'utilisateur ${uid} (pack ${packId})`);
+    }
+  }
+
+  res.status(200).send("ok");
+});
+
+// ============================================================
+//  PAIEMENT CRYPTO (NOWPayments) — Alternative à Stripe
+// ============================================================
+
+// Crée une facture NOWPayments pour un pack de crédits (BTC, ETH, USDT, etc.)
+exports.createCryptoInvoice = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Utilisateur non connecté.");
+  }
+  const apiKey = process.env.NOWPAYMENTS_API_KEY;
+  if (!apiKey) {
+    throw new functions.https.HttpsError("failed-precondition", "NOWPAYMENTS_API_KEY manquante. Voir functions/.env.example.");
+  }
+
+  const packId = data.packId;
+  const pack = CREDIT_PACKS[packId];
+  if (!pack) {
+    throw new functions.https.HttpsError("invalid-argument", "Pack de crédits inconnu.");
+  }
+
+  const uid = context.auth.uid;
+  const successUrl = data.successUrl || "https://example.com/success";
+  // On encode uid + packId dans order_id pour les retrouver dans le webhook IPN
+  // (NOWPayments n'a pas de champ "metadata" comme Stripe)
+  const orderId = `${uid}__${packId}__${Date.now()}`;
+
+  const response = await fetch("https://api.nowpayments.io/v1/invoice", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      price_amount: pack.amountCents / 100,
+      price_currency: "usd",
+      order_id: orderId,
+      order_description: pack.label,
+      ipn_callback_url: process.env.NOWPAYMENTS_IPN_URL, // URL déployée de nowPaymentsWebhook
+      success_url: successUrl,
+    }),
+  });
+
+  const json = await response.json();
+  if (!json.invoice_url) {
+    console.error("Réponse NOWPayments inattendue :", json);
+    throw new functions.https.HttpsError("internal", "Échec de la création de la facture crypto.");
+  }
+
+  return { url: json.invoice_url };
+});
+
+// Webhook IPN NOWPayments : vérifie la signature HMAC-SHA512 et crédite l'utilisateur
+// une fois le paiement confirmé. URL à renseigner dans le Dashboard NOWPayments
+// (Store Settings > Instant Payment Notifications) ET dans NOWPAYMENTS_IPN_URL (.env).
+exports.nowPaymentsWebhook = functions.https.onRequest(async (req, res) => {
+  const ipnSecret = process.env.NOWPAYMENTS_IPN_SECRET;
+  if (!ipnSecret) {
+    res.status(500).send("NOWPAYMENTS_IPN_SECRET manquante.");
+    return;
+  }
+
+  // Vérification de la signature (tri des clés + HMAC SHA-512, cf. doc NOWPayments)
+  function sortObject(obj) {
+    return Object.keys(obj).sort().reduce((result, key) => {
+      result[key] = (obj[key] && typeof obj[key] === "object") ? sortObject(obj[key]) : obj[key];
+      return result;
+    }, {});
+  }
+
+  const receivedSig = req.headers["x-nowpayments-sig"];
+  const sortedBody = sortObject(req.body);
+  const hmac = crypto.createHmac("sha512", ipnSecret);
+  hmac.update(JSON.stringify(sortedBody));
+  const computedSig = hmac.digest("hex");
+
+  if (receivedSig !== computedSig) {
+    console.error("Signature NOWPayments invalide.");
+    res.status(401).send("Invalid signature");
+    return;
+  }
+
+  const paymentStatus = req.body.payment_status;
+  const orderId = req.body.order_id || "";
+
+  // On ne crédite que sur confirmation définitive du paiement
+  if (paymentStatus === "finished" || paymentStatus === "confirmed") {
+    const [uid, packId] = orderId.split("__");
+    const pack = CREDIT_PACKS[packId];
+
+    if (uid && pack) {
+      // Idempotence : on vérifie qu'on n'a pas déjà traité cette commande
+      const orderRef = db.collection("processed_crypto_orders").doc(orderId);
+      const orderDoc = await orderRef.get();
+      if (!orderDoc.exists) {
+        await db.collection("users").doc(uid).set({
+          credits: admin.firestore.FieldValue.increment(pack.credits)
+        }, { merge: true });
+        await orderRef.set({ processedAt: admin.firestore.FieldValue.serverTimestamp() });
+        console.log(`[Crypto] Crédité ${pack.credits} crédits à ${uid} (commande ${orderId})`);
+      }
     }
   }
 

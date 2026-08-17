@@ -55,7 +55,7 @@ This item assumes no prior coding experience beyond copy-pasting configuration v
 <h3>3.3 Get a Gemini API key</h3>
 <p>Create a key at <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a>. This powers the AI cover illustration feature (Imagen 4.0).</p>
 
-<h3>3.4 Set up Stripe</h3>
+<h3>3.4 Set up Stripe (card payments)</h3>
 <ol>
   <li>Create an account at <a href="https://dashboard.stripe.com/register">dashboard.stripe.com</a>.</li>
   <li>Get your <strong>Secret key</strong> from Developers → API keys (starts with <code>sk_</code>).</li>
@@ -63,11 +63,24 @@ This item assumes no prior coding experience beyond copy-pasting configuration v
   <li>Edit credit pack pricing directly in <code>functions/index.js</code> under the <code>CREDIT_PACKS</code> object if you want different amounts or prices.</li>
 </ol>
 
+<h3>3.4bis Set up NOWPayments (optional — crypto payments)</h3>
+<p>This item also includes a ready-to-use crypto payment option (BTC, ETH, USDT and 300+ coins) via NOWPayments — useful for buyers/customers in regions with limited card payment access.</p>
+<ol>
+  <li>Create an account at <a href="https://nowpayments.io">nowpayments.io</a>.</li>
+  <li>Dashboard → API Settings → generate your <strong>API key</strong>.</li>
+  <li>Dashboard → Store Settings → Instant Payment Notifications → generate your <strong>IPN Secret key</strong>.</li>
+  <li>Deploy the functions once (step 3.6) to obtain the URL of <code>nowPaymentsWebhook</code>, then paste it both in the NOWPayments dashboard (IPN callback URL) and in <code>NOWPAYMENTS_IPN_URL</code> in your <code>.env</code> file, then redeploy.</li>
+</ol>
+<p>If you don't want to offer crypto payments, simply leave the NOWPayments env variables empty — the "Pay with crypto" button will show a friendly configuration message instead of erroring out.</p>
+
 <h3>3.5 Configure environment variables</h3>
 <p>Copy <code>functions/.env.example</code> to <code>functions/.env</code> and fill in:</p>
 <pre>GEMINI_API_KEY=your_key_here
 STRIPE_SECRET_KEY=sk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...</pre>
+STRIPE_WEBHOOK_SECRET=whsec_...
+NOWPAYMENTS_API_KEY=your_key_here        (optional)
+NOWPAYMENTS_IPN_SECRET=your_secret_here  (optional)
+NOWPAYMENTS_IPN_URL=https://...          (optional, fill after first deploy)</pre>
 
 <h3>3.6 Deploy the Cloud Functions</h3>
 <pre>npm install -g firebase-tools

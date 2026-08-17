@@ -7,6 +7,7 @@ A commercial book cover generator for Amazon KDP (ebook & print), built with van
 - 🖼️ 2D, 3D, and full print-spread previews
 - 🤖 AI cover illustration generation (Gemini/Imagen via a secure Cloud Function)
 - 💳 Stripe-powered credit packs for the AI generation feature
+- ₿ Optional crypto payments (NOWPayments) as an alternative to card — great for regions with limited card access
 - 📤 PNG (ebook) and 300 DPI PDF (print) export
 - 🔒 No external CDN calls — all fonts and libraries are bundled locally
 
