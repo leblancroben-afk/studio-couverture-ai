@@ -1,0 +1,20 @@
+STUDIO COUVERTURE AI — SUPPORT POLICY
+========================================
+
+Support covers:
+- Bug fixes in the code as delivered
+- Help understanding how to configure Firebase, Stripe, and the Gemini API
+  following DOCUMENTATION.html
+- Clarifying how existing features work
+
+Support does NOT cover:
+- Custom feature development or design changes beyond what's documented
+- Installation/configuration of third-party services themselves (Firebase,
+  Stripe, Google Cloud) beyond pointing to their official documentation
+- Issues caused by modifications to the original code
+- Hosting, domain, or server configuration outside of this project's files
+
+Response time: within 2-3 business days via the item's comment section.
+
+For custom modifications or extended support, contact the author directly
+through the marketplace profile page.

@@ -86,10 +86,11 @@
 
         <!-- Crédits & Actions -->
         <div class="flex items-center space-x-3">
-            <div id="credit-badge" class="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs">
+            <button onclick="openCreditsModal()" id="credit-badge" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs transition">
                 <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
                 <span class="text-slate-300">Crédits IA: <strong id="user-credits-count" class="text-amber-400">3</strong></span>
-            </div>
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-slate-400"></i>
+            </button>
             <button onclick="toggleProMode()" id="btn-toggle-pro" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg border border-slate-700 text-amber-400 flex items-center gap-1.5">
                 <i data-lucide="crown" class="w-3.5 h-3.5"></i> <span id="lbl-pro-mode">Mode Démo (Filigrane)</span>
             </button>
@@ -321,6 +322,36 @@
         </main>
     </div>
 
+    <!-- MODALE ACHAT DE CRÉDITS (STRIPE) -->
+    <div id="credits-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+                    <i data-lucide="zap" class="w-5 h-5 text-amber-400"></i> Acheter des crédits IA
+                </h3>
+                <button onclick="closeCreditsModal()" class="text-slate-400 hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p id="credits-modal-status" class="text-xs text-slate-400"></p>
+            <div class="space-y-2">
+                <button onclick="buyCreditPack('pack_10')" class="w-full flex items-center justify-between p-3 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition text-left">
+                    <span class="text-sm font-semibold text-slate-100">10 crédits</span>
+                    <span class="text-sm font-bold text-amber-400">5,00 $</span>
+                </button>
+                <button onclick="buyCreditPack('pack_50')" class="w-full flex items-center justify-between p-3 bg-slate-800 hover:bg-slate-700 rounded-xl border border-amber-500/40 transition text-left relative">
+                    <span class="text-sm font-semibold text-slate-100">50 crédits <span class="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full ml-1">Populaire</span></span>
+                    <span class="text-sm font-bold text-amber-400">20,00 $</span>
+                </button>
+                <button onclick="buyCreditPack('pack_150')" class="w-full flex items-center justify-between p-3 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition text-left">
+                    <span class="text-sm font-semibold text-slate-100">150 crédits</span>
+                    <span class="text-sm font-bold text-amber-400">50,00 $</span>
+                </button>
+            </div>
+            <p class="text-[10px] text-slate-500 text-center">Paiement sécurisé par Stripe. Redirection vers une page de paiement externe.</p>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION -->
     <div id="toast" class="fixed bottom-6 right-6 bg-slate-800 text-slate-100 border border-slate-700 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-20 opacity-0 z-50">
         <i id="toast-icon" data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
@@ -494,6 +525,44 @@
 
             if (state.previewMode === 'spread') {
                 document.getElementById('front-cover-spread').innerHTML = document.getElementById('single-cover').innerHTML;
+            }
+        }
+
+        // ============================================================
+        //  ACHAT DE CRÉDITS (STRIPE)
+        // ============================================================
+        function openCreditsModal() {
+            const modal = document.getElementById('credits-modal');
+            const status = document.getElementById('credits-modal-status');
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+            if (!FIREBASE_IS_CONFIGURED) {
+                status.textContent = "Mode démo : configurez Firebase + Stripe (voir DOCUMENTATION.html) pour activer les achats réels.";
+            } else {
+                status.textContent = "Choisissez un pack, vous serez redirigé vers une page de paiement sécurisée Stripe.";
+            }
+        }
+
+        function closeCreditsModal() {
+            document.getElementById('credits-modal').classList.add('hidden');
+        }
+
+        async function buyCreditPack(packId) {
+            if (!FIREBASE_IS_CONFIGURED || !fbFunctions) {
+                showToast("Configurez Firebase et Stripe pour activer les achats réels (voir DOCUMENTATION.html).", true);
+                return;
+            }
+            try {
+                const createSession = fbFunctions.httpsCallable('createCheckoutSession');
+                const result = await createSession({
+                    packId,
+                    successUrl: window.location.href,
+                    cancelUrl: window.location.href
+                });
+                window.location.href = result.data.url;
+            } catch (err) {
+                console.error(err);
+                showToast("Erreur lors de la création de la session de paiement.", true);
             }
         }
 

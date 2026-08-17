@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Studio Couverture AI — Documentation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 820px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; color: #1a1a1a; }
+  h1 { border-bottom: 3px solid #f59e0b; padding-bottom: 10px; }
+  h2 { margin-top: 40px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+  code, pre { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: "SF Mono", Consolas, monospace; font-size: 0.9em; }
+  pre { padding: 14px; overflow-x: auto; }
+  .note { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 10px 16px; margin: 16px 0; }
+  .step { margin-bottom: 14px; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; font-size: 0.9em; }
+  th { background: #f8fafc; }
+</style>
+</head>
+<body>
+
+<h1>Studio Couverture AI — Documentation</h1>
+<p>Thank you for purchasing <strong>Studio Couverture AI</strong> — a commercial book cover generator for Amazon KDP (ebook &amp; print), built with vanilla HTML/CSS/JS, Tailwind CSS, Firebase, and Stripe. No build step, no framework required — just static files you can host anywhere.</p>
+
+<div class="note">
+This item assumes no prior coding experience beyond copy-pasting configuration values. If you get stuck, see the "Support" section at the end.
+</div>
+
+<h2>1. What's included</h2>
+<table>
+  <tr><th>File / folder</th><th>Purpose</th></tr>
+  <tr><td><code>index.html</code></td><td>The full application (UI + client logic)</td></tr>
+  <tr><td><code>assets/</code></td><td>Local fonts, compiled CSS, and vendor JS libraries (no external CDN calls)</td></tr>
+  <tr><td><code>functions/</code></td><td>Firebase Cloud Functions source (AI generation + Stripe payments)</td></tr>
+  <tr><td><code>DOCUMENTATION.html</code></td><td>This file</td></tr>
+</table>
+
+<h2>2. Quick start (no backend)</h2>
+<div class="step">Upload the project as-is to any static host (GitHub Pages, Netlify, Vercel, your own server). The app runs immediately in <strong>Demo Mode</strong>: AI generation and credit purchases are simulated locally so you can preview the design and KDP calculator right away.</div>
+
+<h2>3. Enabling real AI generation &amp; payments</h2>
+
+<h3>3.1 Create a Firebase project</h3>
+<ol>
+  <li>Go to <a href="https://console.firebase.google.com">console.firebase.google.com</a> and create a new project.</li>
+  <li>Enable <strong>Authentication</strong> → Sign-in method → <strong>Anonymous</strong>.</li>
+  <li>Enable <strong>Firestore Database</strong> (start in production mode).</li>
+  <li>Upgrade to the <strong>Blaze (pay-as-you-go)</strong> plan — required to deploy Cloud Functions that call external APIs.</li>
+  <li>Project settings → Your apps → Web app → copy the config object.</li>
+</ol>
+
+<h3>3.2 Configure the client</h3>
+<p>Open <code>assets/js/firebase-config.js</code> and paste your project's values into the <code>FIREBASE_CONFIG</code> object. The app automatically switches out of Demo Mode once this file contains real values.</p>
+
+<h3>3.3 Get a Gemini API key</h3>
+<p>Create a key at <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a>. This powers the AI cover illustration feature (Imagen 4.0).</p>
+
+<h3>3.4 Set up Stripe</h3>
+<ol>
+  <li>Create an account at <a href="https://dashboard.stripe.com/register">dashboard.stripe.com</a>.</li>
+  <li>Get your <strong>Secret key</strong> from Developers → API keys (starts with <code>sk_</code>).</li>
+  <li>After deploying the functions (step 3.6), go to Developers → Webhooks → Add endpoint, pointing to your deployed <code>stripeWebhook</code> function URL, listening to the <code>checkout.session.completed</code> event. Copy the resulting <strong>Signing secret</strong> (starts with <code>whsec_</code>).</li>
+  <li>Edit credit pack pricing directly in <code>functions/index.js</code> under the <code>CREDIT_PACKS</code> object if you want different amounts or prices.</li>
+</ol>
+
+<h3>3.5 Configure environment variables</h3>
+<p>Copy <code>functions/.env.example</code> to <code>functions/.env</code> and fill in:</p>
+<pre>GEMINI_API_KEY=your_key_here
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...</pre>
+
+<h3>3.6 Deploy the Cloud Functions</h3>
+<pre>npm install -g firebase-tools
+firebase login
+firebase init functions   # select your existing project, don't overwrite functions/index.js
+cd functions
+npm install
+firebase deploy --only functions</pre>
+<p>Note the deployed URL for <code>stripeWebhook</code> (shown in the terminal output) — use it in step 3.4.</p>
+
+<h2>4. Customization</h2>
+<table>
+  <tr><th>What</th><th>Where</th></tr>
+  <tr><td>Colors, fonts, layout</td><td>Tailwind utility classes directly in <code>index.html</code></td></tr>
+  <tr><td>Genre presets (Fantasy, Thriller, etc.)</td><td><code>applyPreset()</code> function in <code>index.html</code></td></tr>
+  <tr><td>KDP trim sizes / paper thickness</td><td><code>calculateKDPDimensions()</code> function in <code>index.html</code></td></tr>
+  <tr><td>Credit pack pricing</td><td><code>CREDIT_PACKS</code> object in <code>functions/index.js</code></td></tr>
+  <tr><td>Watermark text</td><td><code>.watermark-text</code> elements in <code>index.html</code></td></tr>
+</table>
+
+<h2>5. Rebuilding the Tailwind CSS file</h2>
+<p>If you add new Tailwind classes not already used in the project, regenerate <code>assets/css/tailwind.min.css</code>:</p>
+<pre>npm install -D tailwindcss@3
+npx tailwindcss -i ./input.css -o ./assets/css/tailwind.min.css --minify</pre>
+<p>(Create a minimal <code>input.css</code> with <code>@tailwind base; @tailwind components; @tailwind utilities;</code> and a <code>tailwind.config.js</code> pointing <code>content</code> at your HTML files.)</p>
+
+<h2>6. Fonts &amp; licensing</h2>
+<p>All bundled fonts are licensed under the SIL Open Font License 1.1 (free for commercial use, redistribution allowed). See <code>assets/fonts/LICENSE.txt</code> for details and sources.</p>
+
+<h2>7. Support</h2>
+<p>Support is provided through the item's comment section on the marketplace listing. Please include your browser, a description of the issue, and console errors (if any) when reporting a bug. See <code>SUPPORT-POLICY.txt</code> for scope and response times.</p>
+
+</body>
+</html>

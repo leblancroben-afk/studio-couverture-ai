@@ -1,0 +1,19 @@
+STUDIO COUVERTURE AI — LICENSE
+
+This item is licensed under the standard Envato Market license
+applicable to your purchase (Regular License or Extended License),
+as selected at checkout.
+
+Full license terms: https://help.author.envato.com/hc/en-us/articles/360000432857
+
+Summary (not a substitute for the full terms above):
+- Regular License: use this item to create ONE end product for yourself
+  or ONE client, which end users are not charged for.
+- Extended License: required if end users will be charged to access
+  the end product, or if used in a SaaS product.
+
+Bundled third-party assets (fonts, JS libraries) retain their own
+licenses — see assets/fonts/LICENSE.txt and the individual library
+sources for details. All bundled dependencies are permissively
+licensed (MIT or OFL) and compatible with commercial redistribution
+as part of this item.
