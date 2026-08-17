@@ -55,41 +55,56 @@ This item assumes no prior coding experience beyond copy-pasting configuration v
 <h3>3.3 Get a Gemini API key</h3>
 <p>Create a key at <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a>. This powers the AI cover illustration feature (Imagen 4.0).</p>
 
-<h3>3.4 Set up Stripe (card payments)</h3>
+<div class="note">
+This item's backend (AI generation + payments) runs on a <strong>Cloudflare Worker</strong> instead of Firebase Cloud Functions. This means you do <strong>not</strong> need to upgrade to the Firebase Blaze (pay-as-you-go) plan or add a billing card — the free Firebase plan (Spark) is enough, since Firebase is only used here for Authentication and Firestore storage.
+</div>
+
+<h3>3.4 Get a Firebase service account key</h3>
+<p>The Worker needs admin-level access to your Firestore database (to credit users after payment) without going through client-side security rules.</p>
 <ol>
-  <li>Create an account at <a href="https://dashboard.stripe.com/register">dashboard.stripe.com</a>.</li>
-  <li>Get your <strong>Secret key</strong> from Developers → API keys (starts with <code>sk_</code>).</li>
-  <li>After deploying the functions (step 3.6), go to Developers → Webhooks → Add endpoint, pointing to your deployed <code>stripeWebhook</code> function URL, listening to the <code>checkout.session.completed</code> event. Copy the resulting <strong>Signing secret</strong> (starts with <code>whsec_</code>).</li>
-  <li>Edit credit pack pricing directly in <code>functions/index.js</code> under the <code>CREDIT_PACKS</code> object if you want different amounts or prices.</li>
+  <li>Firebase Console → ⚙️ Project settings → <strong>Service accounts</strong> tab.</li>
+  <li>Click <strong>Generate new private key</strong> → confirm → a <code>.json</code> file downloads.</li>
+  <li>Keep this file safe — it grants full admin access to your Firebase project. You'll paste its full contents into a Cloudflare secret in the next step.</li>
 </ol>
 
-<h3>3.4bis Set up NOWPayments (optional — crypto payments)</h3>
+<h3>3.5 Create the Cloudflare Worker</h3>
+<ol>
+  <li>Create a free account at <a href="https://dash.cloudflare.com/sign-up">dash.cloudflare.com</a> — no credit card required.</li>
+  <li>Workers &amp; Pages → Create → Create Worker → give it a name (e.g. <code>studio-couverture-worker</code>) → Deploy.</li>
+  <li>Click <strong>Edit code</strong> → delete the default sample code → paste the entire contents of <code>cf-worker/worker.js</code> from this package → Save and deploy.</li>
+  <li>Go to Settings → Variables and Secrets → add each of the following as a <strong>Secret</strong> (click "Encrypt"):</li>
+</ol>
+<table>
+  <tr><th>Variable</th><th>Value</th></tr>
+  <tr><td><code>FIREBASE_PROJECT_ID</code></td><td>Your Firebase project ID (plain variable, not secret)</td></tr>
+  <tr><td><code>FIREBASE_SERVICE_ACCOUNT</code></td><td>Full JSON contents of the service account file from step 3.4</td></tr>
+  <tr><td><code>GEMINI_API_KEY</code></td><td>From step 3.3</td></tr>
+  <tr><td><code>ALLOWED_ORIGIN</code></td><td>Your site's URL, e.g. <code>https://youraccount.github.io</code> (plain variable)</td></tr>
+  <tr><td><code>STRIPE_SECRET_KEY</code></td><td>Optional — see step 3.6</td></tr>
+  <tr><td><code>STRIPE_WEBHOOK_SECRET</code></td><td>Optional — see step 3.6</td></tr>
+  <tr><td><code>NOWPAYMENTS_API_KEY</code></td><td>Optional — see step 3.7</td></tr>
+  <tr><td><code>NOWPAYMENTS_IPN_SECRET</code></td><td>Optional — see step 3.7</td></tr>
+  <tr><td><code>NOWPAYMENTS_IPN_URL</code></td><td>Optional — your Worker's URL + <code>/nowpayments-webhook</code></td></tr>
+</table>
+<p>Copy your Worker's public URL (shown at the top of the Worker's dashboard page, format <code>https://NAME.YOUR-SUBDOMAIN.workers.dev</code>) into <code>assets/js/worker-config.js</code> as <code>WORKER_URL</code>.</p>
+
+<h3>3.6 Set up Stripe (card payments)</h3>
+<ol>
+  <li>Create an account at <a href="https://dashboard.stripe.com/register">dashboard.stripe.com</a>.</li>
+  <li>Get your <strong>Secret key</strong> from Developers → API keys (starts with <code>sk_</code>) → add it as <code>STRIPE_SECRET_KEY</code> in the Worker.</li>
+  <li>Developers → Webhooks → Add endpoint → URL: your Worker's URL + <code>/stripe-webhook</code> → listen to <code>checkout.session.completed</code> → copy the <strong>Signing secret</strong> (starts with <code>whsec_</code>) → add it as <code>STRIPE_WEBHOOK_SECRET</code>.</li>
+  <li>Edit credit pack pricing directly in <code>cf-worker/worker.js</code> under the <code>CREDIT_PACKS</code> object if you want different amounts or prices (redeploy the Worker after editing).</li>
+</ol>
+
+<h3>3.7 Set up NOWPayments (optional — crypto payments)</h3>
 <p>This item also includes a ready-to-use crypto payment option (BTC, ETH, USDT and 300+ coins) via NOWPayments — useful for buyers/customers in regions with limited card payment access.</p>
 <ol>
   <li>Create an account at <a href="https://nowpayments.io">nowpayments.io</a>.</li>
-  <li>Dashboard → API Settings → generate your <strong>API key</strong>.</li>
-  <li>Dashboard → Store Settings → Instant Payment Notifications → generate your <strong>IPN Secret key</strong>.</li>
-  <li>Deploy the functions once (step 3.6) to obtain the URL of <code>nowPaymentsWebhook</code>, then paste it both in the NOWPayments dashboard (IPN callback URL) and in <code>NOWPAYMENTS_IPN_URL</code> in your <code>.env</code> file, then redeploy.</li>
+  <li>Dashboard → API Settings → generate your <strong>API key</strong> → add as <code>NOWPAYMENTS_API_KEY</code>.</li>
+  <li>Dashboard → Store Settings → Instant Payment Notifications → generate your <strong>IPN Secret key</strong> → add as <code>NOWPAYMENTS_IPN_SECRET</code>.</li>
+  <li>Set both the NOWPayments dashboard's IPN callback URL and the Worker's <code>NOWPAYMENTS_IPN_URL</code> variable to your Worker's URL + <code>/nowpayments-webhook</code>.</li>
 </ol>
-<p>If you don't want to offer crypto payments, simply leave the NOWPayments env variables empty — the "Pay with crypto" button will show a friendly configuration message instead of erroring out.</p>
-
-<h3>3.5 Configure environment variables</h3>
-<p>Copy <code>functions/.env.example</code> to <code>functions/.env</code> and fill in:</p>
-<pre>GEMINI_API_KEY=your_key_here
-STRIPE_SECRET_KEY=sk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-NOWPAYMENTS_API_KEY=your_key_here        (optional)
-NOWPAYMENTS_IPN_SECRET=your_secret_here  (optional)
-NOWPAYMENTS_IPN_URL=https://...          (optional, fill after first deploy)</pre>
-
-<h3>3.6 Deploy the Cloud Functions</h3>
-<pre>npm install -g firebase-tools
-firebase login
-firebase init functions   # select your existing project, don't overwrite functions/index.js
-cd functions
-npm install
-firebase deploy --only functions</pre>
-<p>Note the deployed URL for <code>stripeWebhook</code> (shown in the terminal output) — use it in step 3.4.</p>
+<p>If you don't want to offer crypto or card payments, simply leave the relevant Worker variables empty — the corresponding button will show a friendly configuration message instead of erroring out.</p>
 
 <h2>4. Customization</h2>
 <table>
@@ -97,7 +112,7 @@ firebase deploy --only functions</pre>
   <tr><td>Colors, fonts, layout</td><td>Tailwind utility classes directly in <code>index.html</code></td></tr>
   <tr><td>Genre presets (Fantasy, Thriller, etc.)</td><td><code>applyPreset()</code> function in <code>index.html</code></td></tr>
   <tr><td>KDP trim sizes / paper thickness</td><td><code>calculateKDPDimensions()</code> function in <code>index.html</code></td></tr>
-  <tr><td>Credit pack pricing</td><td><code>CREDIT_PACKS</code> object in <code>functions/index.js</code></td></tr>
+  <tr><td>Credit pack pricing</td><td><code>CREDIT_PACKS</code> object in <code>cf-worker/worker.js</code> (redeploy the Worker after editing)</td></tr>
   <tr><td>Watermark text</td><td><code>.watermark-text</code> elements in <code>index.html</code></td></tr>
 </table>
 

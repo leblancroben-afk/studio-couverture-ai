@@ -18,9 +18,10 @@
     <script src="assets/js/vendor/firebase-app-compat.js"></script>
     <script src="assets/js/vendor/firebase-auth-compat.js"></script>
     <script src="assets/js/vendor/firebase-firestore-compat.js"></script>
-    <script src="assets/js/vendor/firebase-functions-compat.js"></script>
     <!-- Configuration Firebase : à renseigner par l'acheteur avec son propre projet -->
     <script src="assets/js/firebase-config.js"></script>
+    <!-- Configuration du Cloudflare Worker (backend IA + paiements, sans carte bancaire requise) -->
+    <script src="assets/js/worker-config.js"></script>
 
     <style>
         .book-container { perspective: 1200px; }
@@ -396,7 +397,7 @@
         };
 
         // Connexion Firebase réelle (si FIREBASE_CONFIG a été renseignée dans firebase-config.js)
-        let fbApp = null, fbAuth = null, fbDb = null, fbFunctions = null;
+        let fbApp = null, fbAuth = null, fbDb = null;
 
         function initFirebase() {
             if (!FIREBASE_IS_CONFIGURED) {
@@ -407,7 +408,6 @@
                 fbApp = firebase.initializeApp(FIREBASE_CONFIG);
                 fbAuth = firebase.auth();
                 fbDb = firebase.firestore();
-                fbFunctions = firebase.functions();
 
                 fbAuth.onAuthStateChanged(async (user) => {
                     if (user) {
@@ -566,18 +566,20 @@
         }
 
         async function buyCreditPack(packId) {
-            if (!FIREBASE_IS_CONFIGURED || !fbFunctions) {
-                showToast("Configurez Firebase et Stripe pour activer les achats réels (voir DOCUMENTATION.html).", true);
+            if (!FIREBASE_IS_CONFIGURED || !WORKER_IS_CONFIGURED || !fbAuth.currentUser) {
+                showToast("Configurez Firebase et le Worker Cloudflare pour activer les achats réels (voir DOCUMENTATION.html).", true);
                 return;
             }
             try {
-                const createSession = fbFunctions.httpsCallable('createCheckoutSession');
-                const result = await createSession({
-                    packId,
-                    successUrl: window.location.href,
-                    cancelUrl: window.location.href
+                const idToken = await fbAuth.currentUser.getIdToken();
+                const res = await fetch(`${WORKER_URL}/create-checkout-session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                    body: JSON.stringify({ packId, successUrl: window.location.href, cancelUrl: window.location.href })
                 });
-                window.location.href = result.data.url;
+                const result = await res.json();
+                if (!result.url) throw new Error(result.error || 'Erreur inconnue');
+                window.location.href = result.url;
             } catch (err) {
                 console.error(err);
                 showToast("Erreur lors de la création de la session de paiement.", true);
@@ -585,24 +587,27 @@
         }
 
         async function buyCreditPackCrypto(packId) {
-            if (!FIREBASE_IS_CONFIGURED || !fbFunctions) {
-                showToast("Configurez Firebase et NOWPayments pour activer les achats crypto (voir DOCUMENTATION.html).", true);
+            if (!FIREBASE_IS_CONFIGURED || !WORKER_IS_CONFIGURED || !fbAuth.currentUser) {
+                showToast("Configurez Firebase et le Worker Cloudflare pour activer les achats crypto (voir DOCUMENTATION.html).", true);
                 return;
             }
             try {
-                const createInvoice = fbFunctions.httpsCallable('createCryptoInvoice');
-                const result = await createInvoice({
-                    packId,
-                    successUrl: window.location.href
+                const idToken = await fbAuth.currentUser.getIdToken();
+                const res = await fetch(`${WORKER_URL}/create-crypto-invoice`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                    body: JSON.stringify({ packId, successUrl: window.location.href })
                 });
-                window.location.href = result.data.url;
+                const result = await res.json();
+                if (!result.url) throw new Error(result.error || 'Erreur inconnue');
+                window.location.href = result.url;
             } catch (err) {
                 console.error(err);
                 showToast("Erreur lors de la création de la facture crypto.", true);
             }
         }
 
-        // Appel de la Firebase Cloud Function (generateGeminiImage)
+        // Appel du Cloudflare Worker (route /generate-image) — remplace les Firebase Cloud Functions
         async function generateAiBackground() {
             if (state.credits <= 0) {
                 showToast("Crédits insuffisants. Achetez des crédits Pro.", true);
@@ -614,31 +619,36 @@
 
             document.getElementById('ai-loading').classList.remove('hidden');
 
-            // Mode démo local : Firebase non configuré (voir assets/js/firebase-config.js)
-            if (!FIREBASE_IS_CONFIGURED || !fbFunctions) {
+            // Mode démo local : Firebase ou Worker non configuré (voir firebase-config.js / worker-config.js)
+            if (!FIREBASE_IS_CONFIGURED || !WORKER_IS_CONFIGURED || !fbAuth.currentUser) {
                 setTimeout(() => {
                     state.credits -= 1;
                     document.getElementById('user-credits-count').textContent = state.credits;
                     document.getElementById('ai-loading').classList.add('hidden');
-                    showToast("[Démo] Génération simulée (-1 crédit). Configurez Firebase pour la génération réelle.");
+                    showToast("[Démo] Génération simulée (-1 crédit). Configurez Firebase + Worker pour la génération réelle.");
                 }, 2000);
                 return;
             }
 
-            // Appel réel de la Cloud Function sécurisée (clé API Gemini côté serveur, jamais exposée au client)
+            // Appel réel du Worker (clé API Gemini côté serveur, jamais exposée au client)
             try {
-                const callGenerate = fbFunctions.httpsCallable('generateGeminiImage');
-                const result = await callGenerate({ prompt });
-                const imageBase64 = result.data.imageBase64;
+                const idToken = await fbAuth.currentUser.getIdToken();
+                const res = await fetch(`${WORKER_URL}/generate-image`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                    body: JSON.stringify({ prompt })
+                });
+                const result = await res.json();
+                if (!result.imageBase64) throw new Error(result.error || 'Erreur inconnue');
 
-                document.getElementById('cover-custom-image').style.backgroundImage = `url(data:image/png;base64,${imageBase64})`;
+                document.getElementById('cover-custom-image').style.backgroundImage = `url(data:image/png;base64,${result.imageBase64})`;
                 document.getElementById('ai-loading').classList.add('hidden');
                 showToast("Illustration générée via Gemini (-1 crédit) !");
                 // Le solde de crédits est mis à jour automatiquement via listenToUserCredits (onSnapshot)
             } catch (err) {
                 console.error(err);
                 document.getElementById('ai-loading').classList.add('hidden');
-                const msg = err.code === 'resource-exhausted'
+                const msg = err.message === 'Crédits insuffisants.'
                     ? "Crédits insuffisants côté serveur."
                     : "Erreur lors de la génération IA.";
                 showToast(msg, true);

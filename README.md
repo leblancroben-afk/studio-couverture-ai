@@ -5,7 +5,7 @@ A commercial book cover generator for Amazon KDP (ebook & print), built with van
 - 📐 Automatic KDP spine width & bleed calculator (6x9, 5x8, 5.5x8.5)
 - 🎨 4 genre presets (Fantasy, Thriller, Romance, Sci-Fi) with dedicated typography
 - 🖼️ 2D, 3D, and full print-spread previews
-- 🤖 AI cover illustration generation (Gemini/Imagen via a secure Cloud Function)
+- 🤖 AI cover illustration generation (Gemini/Imagen via a secure Cloudflare Worker — no Firebase billing upgrade required)
 - 💳 Stripe-powered credit packs for the AI generation feature
 - ₿ Optional crypto payments (NOWPayments) as an alternative to card — great for regions with limited card access
 - 📤 PNG (ebook) and 300 DPI PDF (print) export
