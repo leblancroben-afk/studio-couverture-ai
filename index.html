@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio Couverture AI - Pro & KDP Print</title>
+
+    <!-- Polices locales (remplace Google Fonts CDN — voir assets/fonts/LICENSE.txt) -->
+    <link rel="stylesheet" href="assets/css/fonts.css">
+    <!-- Tailwind CSS compilé statiquement (remplace le script CDN cdn.tailwindcss.com, non recommandé en production) -->
+    <link rel="stylesheet" href="assets/css/tailwind.min.css">
+    <!-- html2canvas & jsPDF (locaux) -->
+    <script src="assets/js/vendor/html2canvas.min.js"></script>
+    <script src="assets/js/vendor/jspdf.umd.min.js"></script>
+    <!-- Lucide Icons (local) -->
+    <script src="assets/js/vendor/lucide.min.js"></script>
+    <!-- Firebase SDK (Compat, local) -->
+    <script src="assets/js/vendor/firebase-app-compat.js"></script>
+    <script src="assets/js/vendor/firebase-auth-compat.js"></script>
+    <script src="assets/js/vendor/firebase-firestore-compat.js"></script>
+    <script src="assets/js/vendor/firebase-functions-compat.js"></script>
+    <!-- Configuration Firebase : à renseigner par l'acheteur avec son propre projet -->
+    <script src="assets/js/firebase-config.js"></script>
+
+    <style>
+        .book-container { perspective: 1200px; }
+        .book-3d { transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .book-3d:hover { transform: rotateY(-22deg) rotateX(8deg); }
+        .texture-vintage {
+            background-image: radial-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,0.65) 100%), url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.15"/></svg>');
+        }
+        .watermark-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 40;
+        }
+        .watermark-text {
+            transform: rotate(-35deg);
+            font-size: 24px;
+            font-weight: 900;
+            color: rgba(239, 68, 68, 0.35);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            white-space: nowrap;
+            border: 3px dashed rgba(239, 68, 68, 0.35);
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #090d16; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden bg-slate-950 text-slate-100">
+
+    <!-- HEADER -->
+    <header class="h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur px-6 flex items-center justify-between z-20 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <i data-lucide="book-open" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+                    Studio Couverture <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 font-semibold">KDP Edition Pro</span>
+                </h1>
+                <p class="text-xs text-slate-400">Générateur Commercial e-Book & Print Amazon KDP</p>
+            </div>
+        </div>
+
+        <!-- Mode de prévisualisation -->
+        <div class="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800">
+            <button id="btn-view-2d" onclick="setPreviewMode('2d')" class="px-3 py-1.5 text-xs font-medium rounded-md transition flex items-center gap-1.5 bg-indigo-600 text-white">
+                <i data-lucide="layout" class="w-3.5 h-3.5"></i> Couverture 2D
+            </button>
+            <button id="btn-view-3d" onclick="setPreviewMode('3d')" class="px-3 py-1.5 text-xs font-medium rounded-md transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200">
+                <i data-lucide="box" class="w-3.5 h-3.5"></i> Rendus 3D
+            </button>
+            <button id="btn-view-spread" onclick="setPreviewMode('spread')" class="px-3 py-1.5 text-xs font-medium rounded-md transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200">
+                <i data-lucide="book-copy" class="w-3.5 h-3.5"></i> Planche KDP Broché
+            </button>
+        </div>
+
+        <!-- Crédits & Actions -->
+        <div class="flex items-center space-x-3">
+            <div id="credit-badge" class="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs">
+                <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+                <span class="text-slate-300">Crédits IA: <strong id="user-credits-count" class="text-amber-400">3</strong></span>
+            </div>
+            <button onclick="toggleProMode()" id="btn-toggle-pro" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg border border-slate-700 text-amber-400 flex items-center gap-1.5">
+                <i data-lucide="crown" class="w-3.5 h-3.5"></i> <span id="lbl-pro-mode">Mode Démo (Filigrane)</span>
+            </button>
+            <button onclick="exportCover('png')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg border border-slate-700 text-slate-200 flex items-center gap-1.5">
+                <i data-lucide="image" class="w-3.5 h-3.5"></i> PNG E-Book
+            </button>
+            <button onclick="exportCover('pdf')" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold text-xs rounded-lg shadow-lg shadow-amber-500/20 transition flex items-center gap-2">
+                <i data-lucide="file-down" class="w-4 h-4"></i> Export PDF KDP (300 DPI)
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN BODY -->
+    <div class="flex flex-1 overflow-hidden">
+
+        <!-- PANNEAU CONFIGURATION (GAUCHE) -->
+        <aside class="w-96 border-r border-slate-800 bg-slate-900 flex flex-col z-10 shrink-0">
+            <!-- Tabs -->
+            <div class="flex border-b border-slate-800 bg-slate-950 text-xs">
+                <button onclick="switchTab('tab-kdp')" id="tab-btn-kdp" class="flex-1 py-3 font-medium text-amber-400 border-b-2 border-amber-400 flex flex-col items-center gap-1">
+                    <i data-lucide="calculator" class="w-4 h-4"></i> Format KDP
+                </button>
+                <button onclick="switchTab('tab-presets')" id="tab-btn-presets" class="flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i> Thèmes
+                </button>
+                <button onclick="switchTab('tab-text')" id="tab-btn-text" class="flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
+                    <i data-lucide="type" class="w-4 h-4"></i> Textes
+                </button>
+                <button onclick="switchTab('tab-ai')" id="tab-btn-ai" class="flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
+                    <i data-lucide="wand-2" class="w-4 h-4"></i> Image IA
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-5 space-y-6">
+
+                <!-- TAB KDP / CALCULATEUR DE TRANCHE -->
+                <div id="tab-kdp" class="space-y-4">
+                    <div class="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-xs space-y-1">
+                        <div class="font-bold text-amber-400 flex items-center gap-1.5">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i> Conforme Amazon KDP Print
+                        </div>
+                        <p class="text-slate-300 text-[11px] leading-relaxed">
+                            Ajuste automatiquement la largeur de la tranche et le fond perdu (0.125") selon le type de papier et le nombre de pages.
+                        </p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs font-medium text-slate-300 block mb-1">Nombre de pages du livre</label>
+                            <input type="number" id="kdp-pages" value="220" min="24" max="800" oninput="calculateKDPDimensions()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-amber-500">
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-medium text-slate-300 block mb-1">Type de Papier</label>
+                            <select id="kdp-paper" onchange="calculateKDPDimensions()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-amber-500">
+                                <option value="white">Papier Blanc (0.00225" / page)</option>
+                                <option value="cream">Papier Crème (0.0025" / page)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-medium text-slate-300 block mb-1">Format de Coupe Standard</label>
+                            <select id="kdp-trim" onchange="calculateKDPDimensions()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-amber-500">
+                                <option value="6x9">6 x 9 pouces (15.24 x 22.86 cm) - Standard Roman</option>
+                                <option value="5x8">5 x 8 pouces (12.7 x 20.32 cm) - Format Poche</option>
+                                <option value="5.5x8.5">5.5 x 8.5 pouces (13.97 x 21.59 cm)</option>
+                            </select>
+                        </div>
+
+                        <!-- Calculs calculés -->
+                        <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 space-y-2 text-[11px]">
+                            <div class="flex justify-between text-slate-400">
+                                <span>Largeur Tranche Calculée:</span>
+                                <strong id="calc-spine-width" class="text-amber-400">12.4 mm (0.49 in)</strong>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>Dimensions Planche Totale:</span>
+                                <strong id="calc-total-size" class="text-slate-200">317.4 x 235 mm</strong>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>Fond Perdu (Bleed):</span>
+                                <strong class="text-emerald-400">3.2 mm (0.125 in) Inclus</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB PRESETS -->
+                <div id="tab-presets" class="space-y-4 hidden">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Thèmes par Genre Littéraire</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="applyPreset('fantasy')" class="p-3 bg-slate-800/80 hover:bg-slate-800 rounded-xl border border-slate-700/60 text-left transition group">
+                            <div class="text-amber-400 font-cinzel font-bold text-sm">Fantasy Épique</div>
+                            <div class="text-[10px] text-slate-400">Cinzel, Or Sombre, Épique</div>
+                        </button>
+                        <button onclick="applyPreset('thriller')" class="p-3 bg-slate-800/80 hover:bg-slate-800 rounded-xl border border-slate-700/60 text-left transition group">
+                            <div class="text-red-500 font-montserrat font-black text-sm">Thriller Noir</div>
+                            <div class="text-[10px] text-slate-400">Montserrat, Impact, Rouge</div>
+                        </button>
+                        <button onclick="applyPreset('romance')" class="p-3 bg-slate-800/80 hover:bg-slate-800 rounded-xl border border-slate-700/60 text-left transition group">
+                            <div class="text-pink-400 font-vibes text-lg">Romance / Drame</div>
+                            <div class="text-[10px] text-slate-400">Great Vibes, Élégant</div>
+                        </button>
+                        <button onclick="applyPreset('scifi')" class="p-3 bg-slate-800/80 hover:bg-slate-800 rounded-xl border border-slate-700/60 text-left transition group">
+                            <div class="text-cyan-400 font-orbitron font-bold text-xs">Sci-Fi Futuriste</div>
+                            <div class="text-[10px] text-slate-400">Orbitron, Néon Cyber</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB TEXTES -->
+                <div id="tab-text" class="space-y-3 hidden">
+                    <div>
+                        <label class="text-xs font-medium text-slate-300 block mb-1">Titre du livre</label>
+                        <input type="text" id="input-title" value="L'OMBRE DU DESTIN" oninput="updateCover()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-300 block mb-1">Sous-titre</label>
+                        <input type="text" id="input-subtitle" value="Chronique des Royaumes Oubliés" oninput="updateCover()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-300 block mb-1">Nom de l'auteur</label>
+                        <input type="text" id="input-author" value="ALEXANDRE DUVAL" oninput="updateCover()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-300 block mb-1">Résumé (4e de couverture)</label>
+                        <textarea id="input-blurb" rows="3" oninput="updateCover()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">Au cœur des terres dévastées par la magie ancienne, un héros malgré lui découvre un secret capable de faire tomber les empires. Quand la nuit éternelle menace d'engloutir le monde, la lumière la plus vive naît des ténèbres.</textarea>
+                    </div>
+                </div>
+
+                <!-- TAB IA -->
+                <div id="tab-ai" class="space-y-4 hidden">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs font-medium text-slate-300 block mb-1">Prompt Illustration IA</label>
+                            <textarea id="ai-prompt" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100" placeholder="Description de votre illustration...">Un chevalier solitaire au sommet d'une montagne enneigée face à une lune gigantesque, style peinture à l'huile sombre, dramatique</textarea>
+                        </div>
+                        <button id="btn-generate-ai" onclick="generateAiBackground()" class="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 text-white text-xs font-semibold rounded-lg shadow-lg flex items-center justify-center gap-2">
+                            <i data-lucide="wand-2" class="w-4 h-4"></i> Générer l'Illustration (-1 Crédit)
+                        </button>
+                        <div id="ai-loading" class="hidden text-center py-3">
+                            <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-amber-500 border-t-transparent"></div>
+                            <p class="text-xs text-amber-400 mt-1">Génération via Gemini Cloud Function...</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ZONE DE PRÉVISUALISATION (CENTRE) -->
+        <main class="flex-1 bg-slate-950 p-6 flex items-center justify-center relative overflow-auto">
+            <div class="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-30 pointer-events-none"></div>
+
+            <div id="preview-wrapper" class="relative z-10 my-auto flex items-center justify-center">
+
+                <!-- CONTENEUR DU LIVRE (SPREAD KDP / 2D / 3D) -->
+                <div id="book-element" class="book-container">
+
+                    <!-- PLANCHE KDP SPREAD COMPLÈTE (DOS + TRANCHE + FACE) -->
+                    <div id="spread-view" class="hidden flex shadow-2xl rounded-sm overflow-hidden border border-slate-800 bg-slate-900 transition-all relative">
+                        
+                        <!-- Filigrane Démo -->
+                        <div id="watermark-spread" class="watermark-overlay">
+                            <div class="watermark-text">DÉMO - STUDIO COUVERTURE AI</div>
+                        </div>
+
+                        <!-- DOS (BACK COVER) -->
+                        <div id="back-cover" class="w-[280px] h-[440px] relative p-6 flex flex-col justify-between text-slate-100 bg-slate-900">
+                            <div class="space-y-4">
+                                <div id="back-tagline-display" class="text-[10px] uppercase tracking-widest text-amber-400 font-semibold border-b border-amber-500/30 pb-2">BEST-SELLER N°1</div>
+                                <h3 id="back-title-display" class="font-cinzel text-sm font-bold tracking-wider text-amber-200">L'OMBRE DU DESTIN</h3>
+                                <p id="back-blurb-display" class="text-[11px] leading-relaxed text-slate-300 font-cormorant text-justify">Au cœur des terres dévastées par la magie ancienne, un héros malgré lui découvre un secret capable de faire tomber les empires.</p>
+                            </div>
+                            <div class="flex items-end justify-between border-t border-slate-800 pt-3">
+                                <div class="text-[8px] font-mono text-slate-500">ISBN 978-2-07-058462-8</div>
+                                <div class="bg-white p-1 rounded shadow-sm">
+                                    <div class="w-16 h-6 bg-[repeating-linear-gradient(90deg,#000,#000_2px,#fff_2px,#fff_4px)]"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TRANCHE (SPINE) DYNAMIQUE -->
+                        <div id="spine-cover" class="w-[34px] h-[440px] relative flex flex-col justify-between items-center py-6 px-1 text-slate-100 bg-slate-950 border-x border-slate-800 overflow-hidden">
+                            <div id="spine-publisher-display" class="text-[8px] font-bold uppercase text-slate-400 rotate-90 whitespace-nowrap">SOMMET</div>
+                            <div class="flex-1 flex items-center justify-center">
+                                <div id="spine-title-display" class="text-xs font-bold uppercase tracking-widest text-amber-400 rotate-90 whitespace-nowrap font-cinzel">L'OMBRE DU DESTIN — ALEXANDRE DUVAL</div>
+                            </div>
+                        </div>
+
+                        <!-- FACE AVANT (FRONT COVER) SPREAD -->
+                        <div id="front-cover-spread" class="w-[280px] h-[440px] relative p-6 flex flex-col justify-between bg-slate-900"></div>
+                    </div>
+
+                    <!-- MODE 2D & 3D (SINGLE COVER) -->
+                    <div id="main-cover-3d-wrapper" class="relative">
+                        <div id="single-cover" class="w-[300px] h-[460px] sm:w-[320px] sm:h-[490px] relative rounded-r-md shadow-2xl flex flex-col justify-between p-6 overflow-hidden transition-all duration-300">
+                            
+                            <!-- Filigrane Démo -->
+                            <div id="watermark-single" class="watermark-overlay">
+                                <div class="watermark-text">DÉMO - STUDIO COUVERTURE AI</div>
+                            </div>
+
+                            <!-- Fonds & Effets -->
+                            <div id="cover-bg" class="absolute inset-0 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950"></div>
+                            <div id="cover-custom-image" class="absolute inset-0 bg-cover bg-center opacity-80"></div>
+                            <div id="cover-texture" class="absolute inset-0 texture-vintage pointer-events-none"></div>
+
+                            <!-- Contenu Textuel -->
+                            <div class="relative z-10 space-y-2 text-center">
+                                <div id="display-tagline" class="text-[9px] uppercase tracking-widest text-amber-300 font-semibold">BEST-SELLER N°1</div>
+                                <h2 id="display-title" class="font-cinzel font-black text-amber-400 tracking-wider uppercase leading-tight" style="font-size: 36px;">L'OMBRE DU DESTIN</h2>
+                                <p id="display-subtitle" class="font-cormorant italic text-xs text-slate-200">Chronique des Royaumes Oubliés</p>
+                            </div>
+
+                            <div class="relative z-10 text-center space-y-3">
+                                <div>
+                                    <span class="text-[8px] uppercase tracking-widest text-slate-400 block">Un roman de</span>
+                                    <div id="display-author" class="font-montserrat font-bold text-sm tracking-widest text-slate-100 uppercase">ALEXANDRE DUVAL</div>
+                                </div>
+                                <div id="display-publisher" class="text-[8px] font-semibold tracking-widest text-amber-400/80 uppercase border-t border-amber-500/20 pt-2">ÉDITIONS DU SOMMET</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-800 text-slate-100 border border-slate-700 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-20 opacity-0 z-50">
+        <i id="toast-icon" data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
+        <span id="toast-message" class="text-xs font-medium">Message de notification</span>
+    </div>
+
+    <!-- LOGIQUE JAVASCRIPT -->
+    <script>
+        // État de l'application
+        const state = {
+            previewMode: '2d',
+            isProMode: false,
+            credits: 3,
+            kdpPages: 220,
+            kdpPaper: 'white',
+            kdpTrim: '6x9',
+            calculatedSpineWidthMm: 12.4,
+            title: "L'OMBRE DU DESTIN",
+            subtitle: "Chronique des Royaumes Oubliés",
+            author: "ALEXANDRE DUVAL",
+            blurb: "Au cœur des terres dévastées par la magie ancienne, un héros malgré lui découvre un secret capable de faire tomber les empires.",
+            customImageUrl: null,
+            bgGradient: 'gradient-dark'
+        };
+
+        // Connexion Firebase réelle (si FIREBASE_CONFIG a été renseignée dans firebase-config.js)
+        let fbApp = null, fbAuth = null, fbDb = null, fbFunctions = null;
+
+        function initFirebase() {
+            if (!FIREBASE_IS_CONFIGURED) {
+                console.info("[Studio Couverture AI] Firebase non configuré — mode démo local actif. Voir assets/js/firebase-config.js");
+                return;
+            }
+            try {
+                fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+                fbAuth = firebase.auth();
+                fbDb = firebase.firestore();
+                fbFunctions = firebase.functions();
+
+                fbAuth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        listenToUserCredits(user.uid);
+                    } else {
+                        fbAuth.signInAnonymously().catch(err => {
+                            console.error("Échec de la connexion anonyme Firebase :", err);
+                            showToast("Connexion au service IA impossible. Mode démo local actif.", true);
+                        });
+                    }
+                });
+            } catch (err) {
+                console.error("Erreur d'initialisation Firebase :", err);
+            }
+        }
+
+        // Écoute en temps réel du solde de crédits Firestore (users/{uid}.credits)
+        function listenToUserCredits(uid) {
+            const userRef = fbDb.collection('users').doc(uid);
+            userRef.get().then(doc => {
+                if (!doc.exists) {
+                    // Nouveau compte : crédits de bienvenue par défaut
+                    userRef.set({ credits: 3 }, { merge: true });
+                }
+            });
+            userRef.onSnapshot(doc => {
+                if (doc.exists) {
+                    state.credits = doc.data().credits ?? 0;
+                    document.getElementById('user-credits-count').textContent = state.credits;
+                }
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            calculateKDPDimensions();
+            updateCover();
+            initFirebase();
+        });
+
+        // Calculateur de Tranche KDP Amazon
+        function calculateKDPDimensions() {
+            const pages = parseInt(document.getElementById('kdp-pages').value) || 100;
+            const paper = document.getElementById('kdp-paper').value;
+            
+            // Épaisseur par page : Blanc = 0.00225 pouces, Crème = 0.0025 pouces
+            const thicknessPerPage = (paper === 'white') ? 0.00225 : 0.0025;
+            const spineWidthInches = pages * thicknessPerPage;
+            const spineWidthMm = (spineWidthInches * 25.4).toFixed(1);
+
+            state.kdpPages = pages;
+            state.calculatedSpineWidthMm = spineWidthMm;
+
+            document.getElementById('calc-spine-width').textContent = `${spineWidthMm} mm (${spineWidthInches.toFixed(2)} in)`;
+            
+            // Mettre à jour la largeur de l'élément HTML de la tranche
+            const spineCover = document.getElementById('spine-cover');
+            const pixelWidth = Math.max(20, Math.min(80, spineWidthMm * 2.5));
+            spineCover.style.width = `${pixelWidth}px`;
+
+            document.getElementById('calc-total-size').textContent = `${(152.4 * 2 + parseFloat(spineWidthMm) + 6.35).toFixed(1)} x 235 mm`;
+        }
+
+        function switchTab(tabId) {
+            ['tab-kdp', 'tab-presets', 'tab-text', 'tab-ai'].forEach(id => {
+                const content = document.getElementById(id);
+                const btn = document.getElementById(`tab-btn-${id.replace('tab-', '')}`);
+                if (id === tabId) {
+                    content.classList.remove('hidden');
+                    btn.classList.add('text-amber-400', 'border-amber-400');
+                } else {
+                    content.classList.add('hidden');
+                    btn.classList.remove('text-amber-400', 'border-amber-400');
+                }
+            });
+        }
+
+        function setPreviewMode(mode) {
+            state.previewMode = mode;
+            const singleCover = document.getElementById('single-cover');
+            const spreadView = document.getElementById('spread-view');
+            const main3dWrapper = document.getElementById('main-cover-3d-wrapper');
+
+            if (mode === 'spread') {
+                spreadView.classList.remove('hidden');
+                main3dWrapper.classList.add('hidden');
+                document.getElementById('front-cover-spread').innerHTML = singleCover.innerHTML;
+            } else {
+                spreadView.classList.add('hidden');
+                main3dWrapper.classList.remove('hidden');
+                if (mode === '3d') {
+                    singleCover.classList.add('book-3d');
+                    singleCover.style.transform = "rotateY(-20deg) rotateX(8deg)";
+                } else {
+                    singleCover.classList.remove('book-3d');
+                    singleCover.style.transform = "none";
+                }
+            }
+        }
+
+        function toggleProMode() {
+            state.isProMode = !state.isProMode;
+            const watermarkSingle = document.getElementById('watermark-single');
+            const watermarkSpread = document.getElementById('watermark-spread');
+            const lbl = document.getElementById('lbl-pro-mode');
+
+            if (state.isProMode) {
+                watermarkSingle.classList.add('hidden');
+                watermarkSpread.classList.add('hidden');
+                lbl.textContent = "Mode Pro (Sans Filigrane)";
+                showToast("Mode Pro activé : Filigrane retiré !");
+            } else {
+                watermarkSingle.classList.remove('hidden');
+                watermarkSpread.classList.remove('hidden');
+                lbl.textContent = "Mode Démo (Filigrane)";
+                showToast("Mode Démo : Filigrane activé.");
+            }
+        }
+
+        function updateCover() {
+            state.title = document.getElementById('input-title').value;
+            state.subtitle = document.getElementById('input-subtitle').value;
+            state.author = document.getElementById('input-author').value;
+            state.blurb = document.getElementById('input-blurb').value;
+
+            document.getElementById('display-title').textContent = state.title;
+            document.getElementById('display-subtitle').textContent = state.subtitle;
+            document.getElementById('display-author').textContent = state.author;
+
+            document.getElementById('back-title-display').textContent = state.title;
+            document.getElementById('back-blurb-display').textContent = state.blurb;
+            document.getElementById('spine-title-display').textContent = `${state.title} — ${state.author}`;
+
+            if (state.previewMode === 'spread') {
+                document.getElementById('front-cover-spread').innerHTML = document.getElementById('single-cover').innerHTML;
+            }
+        }
+
+        // Appel de la Firebase Cloud Function (generateGeminiImage)
+        async function generateAiBackground() {
+            if (state.credits <= 0) {
+                showToast("Crédits insuffisants. Achetez des crédits Pro.", true);
+                return;
+            }
+
+            const prompt = document.getElementById('ai-prompt').value.trim();
+            if (!prompt) return;
+
+            document.getElementById('ai-loading').classList.remove('hidden');
+
+            // Mode démo local : Firebase non configuré (voir assets/js/firebase-config.js)
+            if (!FIREBASE_IS_CONFIGURED || !fbFunctions) {
+                setTimeout(() => {
+                    state.credits -= 1;
+                    document.getElementById('user-credits-count').textContent = state.credits;
+                    document.getElementById('ai-loading').classList.add('hidden');
+                    showToast("[Démo] Génération simulée (-1 crédit). Configurez Firebase pour la génération réelle.");
+                }, 2000);
+                return;
+            }
+
+            // Appel réel de la Cloud Function sécurisée (clé API Gemini côté serveur, jamais exposée au client)
+            try {
+                const callGenerate = fbFunctions.httpsCallable('generateGeminiImage');
+                const result = await callGenerate({ prompt });
+                const imageBase64 = result.data.imageBase64;
+
+                document.getElementById('cover-custom-image').style.backgroundImage = `url(data:image/png;base64,${imageBase64})`;
+                document.getElementById('ai-loading').classList.add('hidden');
+                showToast("Illustration générée via Gemini (-1 crédit) !");
+                // Le solde de crédits est mis à jour automatiquement via listenToUserCredits (onSnapshot)
+            } catch (err) {
+                console.error(err);
+                document.getElementById('ai-loading').classList.add('hidden');
+                const msg = err.code === 'resource-exhausted'
+                    ? "Crédits insuffisants côté serveur."
+                    : "Erreur lors de la génération IA.";
+                showToast(msg, true);
+            }
+        }
+
+        // Export PNG / PDF KDP 300 DPI
+        function exportCover(type) {
+            showToast(`Préparation de l'exportation ${type.toUpperCase()}...`);
+            let target = (state.previewMode === 'spread') ? document.getElementById('spread-view') : document.getElementById('single-cover');
+
+            html2canvas(target, { scale: 3, useCORS: true }).then(canvas => {
+                if (type === 'png') {
+                    const link = document.createElement('a');
+                    link.download = `Couverture_${state.title}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } else if (type === 'pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({
+                        orientation: 'landscape',
+                        unit: 'mm',
+                        format: [317.4, 235] // Format avec fond perdu
+                    });
+                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                    pdf.addImage(imgData, 'JPEG', 0, 0, 317.4, 235);
+                    pdf.save(`KDP_Broche_Print_${state.title}.pdf`);
+                }
+                showToast("Fichier exporté avec succès !");
+            });
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

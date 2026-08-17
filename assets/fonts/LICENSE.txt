@@ -1,0 +1,18 @@
+Toutes les polices de ce dossier sont distribuées sous licence
+SIL Open Font License, Version 1.1 (OFL-1.1).
+
+Cette licence autorise l'usage, l'étude, la modification et la
+redistribution — y compris dans un contexte commercial — à condition
+de ne pas vendre les polices seules et de conserver cette notice.
+
+Texte complet de la licence : https://openfontlicense.org
+
+Polices incluses et sources officielles (Google Fonts / GitHub):
+- Cinzel               https://github.com/google/fonts/tree/main/ofl/cinzel
+- Cormorant Garamond   https://github.com/google/fonts/tree/main/ofl/cormorantgaramond
+- Great Vibes          https://github.com/google/fonts/tree/main/ofl/greatvibes
+- Inter                https://github.com/google/fonts/tree/main/ofl/inter
+- Montserrat           https://github.com/google/fonts/tree/main/ofl/montserrat
+- Orbitron             https://github.com/google/fonts/tree/main/ofl/orbitron
+- Playfair Display     https://github.com/google/fonts/tree/main/ofl/playfairdisplay
+- UnifrakturMaguntia   https://github.com/google/fonts/tree/main/ofl/unifrakturmaguntia
