@@ -648,7 +648,10 @@
             } catch (err) {
                 console.error(err);
                 document.getElementById('ai-loading').classList.add('hidden');
-                showToast("Erreur : " + err.message, true);
+                const msg = err.message.includes('Crédits insuffisants')
+                    ? "Crédits insuffisants côté serveur."
+                    : "Erreur lors de la génération IA. Vérifiez la configuration du Worker.";
+                showToast(msg, true);
             }
         }
 

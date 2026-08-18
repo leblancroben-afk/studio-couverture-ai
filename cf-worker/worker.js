@@ -222,7 +222,8 @@ async function handleGenerateImage(request, env) {
   const geminiJson = await geminiRes.json();
   const imagePart = geminiJson.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
   if (!imagePart) {
-    return json({ error: "Échec Gemini: " + JSON.stringify(geminiJson).slice(0, 300) }, 500, env);
+    console.error("Réponse Gemini inattendue :", JSON.stringify(geminiJson));
+    return json({ error: "Échec de la génération IA." }, 500, env);
   }
 
   await incrementUserCredits(env.FIREBASE_PROJECT_ID, accessToken, uid, -1);

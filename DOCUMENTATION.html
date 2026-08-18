@@ -53,7 +53,11 @@ This item assumes no prior coding experience beyond copy-pasting configuration v
 <p>Open <code>assets/js/firebase-config.js</code> and paste your project's values into the <code>FIREBASE_CONFIG</code> object. The app automatically switches out of Demo Mode once this file contains real values.</p>
 
 <h3>3.3 Get a Gemini API key</h3>
-<p>Create a key at <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a>. This powers the AI cover illustration feature (Imagen 4.0).</p>
+<p>Create a key at <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a>. This powers the AI cover illustration feature (Gemini 3.1 Flash Image).</p>
+
+<div class="note">
+<strong>Important — image generation billing:</strong> unlike Gemini's text models, image generation models have little to no free daily quota through the API (testing in AI Studio itself is free, but programmatic API calls are billed). To use the AI illustration feature in production, enable Cloud Billing on the Google Cloud project tied to your API key (AI Studio → API keys → your project → Upgrade). Pricing is per generated image — check <a href="https://ai.google.dev/gemini-api/docs/pricing">ai.google.dev/gemini-api/docs/pricing</a> for current rates. The rest of the app (cover editor, KDP calculator, exports) works fully without this.
+</div>
 
 <div class="note">
 This item's backend (AI generation + payments) runs on a <strong>Cloudflare Worker</strong> instead of Firebase Cloud Functions. This means you do <strong>not</strong> need to upgrade to the Firebase Blaze (pay-as-you-go) plan or add a billing card — the free Firebase plan (Spark) is enough, since Firebase is only used here for Authentication and Firestore storage.
