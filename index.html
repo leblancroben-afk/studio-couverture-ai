@@ -246,8 +246,22 @@
                         <input type="text" id="input-author" value="ALEXANDRE DUVAL" oninput="updateCover()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">
                     </div>
                     <div>
+                        <label class="text-xs font-medium text-slate-300 block mb-1">Bandeau / Mention spéciale</label>
+                        <input type="text" id="input-tagline" value="BEST-SELLER N°1" oninput="updateCover()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">
+                    </div>
+                    <div>
                         <label class="text-xs font-medium text-slate-300 block mb-1">Résumé (4e de couverture)</label>
                         <textarea id="input-blurb" rows="3" oninput="updateCover()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">Au cœur des terres dévastées par la magie ancienne, un héros malgré lui découvre un secret capable de faire tomber les empires. Quand la nuit éternelle menace d'engloutir le monde, la lumière la plus vive naît des ténèbres.</textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs font-medium text-slate-300 block mb-1">Éditeur / Logo</label>
+                            <input type="text" id="input-publisher" value="ÉDITIONS DU SOMMET" oninput="updateCover()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-300 block mb-1">Code-barres ISBN</label>
+                            <input type="text" id="input-isbn" value="978-2-07-058462-8" oninput="updateCover()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">
+                        </div>
                     </div>
                 </div>
 
@@ -356,7 +370,7 @@
                                 <p id="back-blurb-display" class="text-[11px] leading-relaxed text-slate-300 font-cormorant text-justify">Au cœur des terres dévastées par la magie ancienne, un héros malgré lui découvre un secret capable de faire tomber les empires.</p>
                             </div>
                             <div class="flex items-end justify-between border-t border-slate-800 pt-3">
-                                <div class="text-[8px] font-mono text-slate-500">ISBN 978-2-07-058462-8</div>
+                                <div id="back-isbn-display" class="text-[8px] font-mono text-slate-500">ISBN 978-2-07-058462-8</div>
                                 <div class="bg-white p-1 rounded shadow-sm">
                                     <div class="w-16 h-6 bg-[repeating-linear-gradient(90deg,#000,#000_2px,#fff_2px,#fff_4px)]"></div>
                                 </div>
@@ -389,7 +403,16 @@
                             <div id="cover-custom-image" class="absolute inset-0 bg-cover bg-center opacity-80"></div>
                             <div id="cover-texture" class="absolute inset-0 texture-vintage pointer-events-none"></div>
                             <div id="cover-vignette" class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90 pointer-events-none"></div>
-                            <div id="cover-border" class="hidden absolute inset-3 border-2 border-amber-500/40 rounded pointer-events-none z-10"></div>
+                            <div id="cover-border" class="hidden absolute inset-3 pointer-events-none z-10 flex flex-col justify-between p-1">
+                                <div class="flex justify-between">
+                                    <div class="w-3 h-3 border-t-2 border-l-2 border-amber-400"></div>
+                                    <div class="w-3 h-3 border-t-2 border-r-2 border-amber-400"></div>
+                                </div>
+                                <div class="flex justify-between">
+                                    <div class="w-3 h-3 border-b-2 border-l-2 border-amber-400"></div>
+                                    <div class="w-3 h-3 border-b-2 border-r-2 border-amber-400"></div>
+                                </div>
+                            </div>
 
                             <!-- Contenu Textuel -->
                             <div class="relative z-10 space-y-2 text-center">
@@ -482,7 +505,10 @@
             title: "L'OMBRE DU DESTIN",
             subtitle: "Chronique des Royaumes Oubliés",
             author: "ALEXANDRE DUVAL",
+            tagline: "BEST-SELLER N°1",
             blurb: "Au cœur des terres dévastées par la magie ancienne, un héros malgré lui découvre un secret capable de faire tomber les empires.",
+            publisher: "ÉDITIONS DU SOMMET",
+            isbn: "978-2-07-058462-8",
             customImageUrl: null,
             titleFont: 'font-cinzel',
             titleSize: 36,
@@ -648,7 +674,10 @@
             state.title = document.getElementById('input-title').value;
             state.subtitle = document.getElementById('input-subtitle').value;
             state.author = document.getElementById('input-author').value;
+            state.tagline = document.getElementById('input-tagline').value;
             state.blurb = document.getElementById('input-blurb').value;
+            state.publisher = document.getElementById('input-publisher').value;
+            state.isbn = document.getElementById('input-isbn').value;
 
             state.titleFont = document.getElementById('select-font-title').value;
             state.titleSize = document.getElementById('range-title-size').value;
@@ -668,8 +697,13 @@
             displayTitle.className = `${state.titleFont} font-black tracking-wider uppercase leading-tight`;
 
             document.getElementById('back-title-display').textContent = state.title;
+            document.getElementById('back-tagline-display').textContent = state.tagline;
             document.getElementById('back-blurb-display').textContent = state.blurb;
+            document.getElementById('back-isbn-display').textContent = `ISBN ${state.isbn}`;
             document.getElementById('spine-title-display').textContent = `${state.title} — ${state.author}`;
+            document.getElementById('spine-publisher-display').textContent = state.publisher;
+            document.getElementById('display-tagline').textContent = state.tagline;
+            document.getElementById('display-publisher').textContent = state.publisher;
 
             // Arrière-plan (gradient ou image personnalisée/IA)
             const coverBg = document.getElementById('cover-bg');
