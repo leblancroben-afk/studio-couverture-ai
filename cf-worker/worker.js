@@ -211,22 +211,22 @@ async function handleGenerateImage(request, env) {
   const credits = await getUserCredits(env.FIREBASE_PROJECT_ID, accessToken, uid);
   if (credits < 1) return json({ error: "Crédits insuffisants." }, 402, env);
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${env.GEMINI_API_KEY}`;
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${env.GEMINI_API_KEY}`;
   const geminiRes = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      instances: [{ prompt: `${prompt}, high quality book cover illustration` }],
-      parameters: { sampleCount: 1 },
+      contents: [{ parts: [{ text: `${prompt}, high quality book cover illustration` }] }],
     }),
   });
   const geminiJson = await geminiRes.json();
-  if (!geminiJson.predictions?.[0]?.bytesBase64Encoded) {
+  const imagePart = geminiJson.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
+  if (!imagePart) {
     return json({ error: "Échec Gemini: " + JSON.stringify(geminiJson).slice(0, 300) }, 500, env);
   }
 
   await incrementUserCredits(env.FIREBASE_PROJECT_ID, accessToken, uid, -1);
-  return json({ imageBase64: geminiJson.predictions[0].bytesBase64Encoded }, 200, env);
+  return json({ imageBase64: imagePart.inlineData.data }, 200, env);
 }
 
 async function handleCreateCheckoutSession(request, env) {
