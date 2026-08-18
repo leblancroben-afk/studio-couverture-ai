@@ -120,6 +120,9 @@
                 <button onclick="switchTab('tab-text')" id="tab-btn-text" class="flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
                     <i data-lucide="type" class="w-4 h-4"></i> Textes
                 </button>
+                <button onclick="switchTab('tab-style')" id="tab-btn-style" class="flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
+                    <i data-lucide="palette" class="w-4 h-4"></i> Styles
+                </button>
                 <button onclick="switchTab('tab-ai')" id="tab-btn-ai" class="flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
                     <i data-lucide="wand-2" class="w-4 h-4"></i> Image IA
                 </button>
@@ -199,6 +202,32 @@
                             <div class="text-cyan-400 font-orbitron font-bold text-xs">Sci-Fi Futuriste</div>
                             <div class="text-[10px] text-slate-400">Orbitron, Néon Cyber</div>
                         </button>
+                        <button onclick="applyPreset('poetry')" class="p-3 bg-slate-800/80 hover:bg-slate-800 rounded-xl border border-slate-700/60 text-left transition group">
+                            <div class="text-emerald-400 font-cormorant italic text-sm">Poésie & Essais</div>
+                            <div class="text-[10px] text-slate-400">Cormorant, Minimaliste</div>
+                        </button>
+                        <button onclick="applyPreset('classic')" class="p-3 bg-slate-800/80 hover:bg-slate-800 rounded-xl border border-slate-700/60 text-left transition group">
+                            <div class="text-slate-200 font-playfair font-bold text-sm">Roman Classique</div>
+                            <div class="text-[10px] text-slate-400">Playfair, Élégant & Sobre</div>
+                        </button>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-800">
+                        <h4 class="text-xs font-semibold text-slate-300 mb-2">Effets de Finition</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer p-2 rounded bg-slate-800/40">
+                                <span class="flex items-center gap-2"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i> Cadre d'or décoratif</span>
+                                <input type="checkbox" id="chk-border" onchange="updateCover()" class="rounded bg-slate-900 border-slate-700 text-amber-500">
+                            </label>
+                            <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer p-2 rounded bg-slate-800/40">
+                                <span class="flex items-center gap-2"><i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i> Texture Vintage / Grain</span>
+                                <input type="checkbox" id="chk-texture" onchange="updateCover()" checked class="rounded bg-slate-900 border-slate-700 text-indigo-500">
+                            </label>
+                            <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer p-2 rounded bg-slate-800/40">
+                                <span class="flex items-center gap-2"><i data-lucide="sun" class="w-3.5 h-3.5 text-amber-300"></i> Voile d'ombrage haut/bas</span>
+                                <input type="checkbox" id="chk-vignette" onchange="updateCover()" checked class="rounded bg-slate-900 border-slate-700 text-amber-500">
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -222,12 +251,72 @@
                     </div>
                 </div>
 
+                <!-- TAB STYLES -->
+                <div id="tab-style" class="space-y-4 hidden">
+                    <div>
+                        <label class="text-xs font-medium text-slate-300 block mb-1">Police du Titre</label>
+                        <select id="select-font-title" onchange="updateCover()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">
+                            <option value="font-cinzel">Cinzel (Épique / Magique)</option>
+                            <option value="font-playfair">Playfair Display (Classique / Littéraire)</option>
+                            <option value="font-cormorant">Cormorant Garamond (Poétique / Élégant)</option>
+                            <option value="font-montserrat">Montserrat (Moderne / Thriller)</option>
+                            <option value="font-orbitron">Orbitron (Futuriste / Sci-Fi)</option>
+                            <option value="font-vibes">Great Vibes (Calligraphie / Romance)</option>
+                            <option value="font-gothic">UnifrakturMaguntia (Gothique)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-medium text-slate-300 block mb-1">Couleur des Textes</label>
+                        <div class="flex gap-2">
+                            <input type="color" id="color-text" value="#f59e0b" onchange="updateCover()" class="w-10 h-8 bg-slate-950 border border-slate-800 rounded cursor-pointer">
+                            <button onclick="setTextColor('#ffffff')" class="px-2 py-1 bg-white border rounded text-[10px] text-slate-900 font-bold">Blanc</button>
+                            <button onclick="setTextColor('#f59e0b')" class="px-2 py-1 bg-amber-500 border rounded text-[10px] text-slate-900 font-bold">Or</button>
+                            <button onclick="setTextColor('#ef4444')" class="px-2 py-1 bg-red-500 border rounded text-[10px] text-white font-bold">Rouge</button>
+                            <button onclick="setTextColor('#06b6d4')" class="px-2 py-1 bg-cyan-500 border rounded text-[10px] text-slate-900 font-bold">Cyan</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-medium text-slate-300 block mb-1">Taille du Titre</label>
+                        <input type="range" id="range-title-size" min="20" max="64" value="36" oninput="updateCover()" class="w-full accent-amber-500">
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-medium text-slate-300 block mb-1">Arrière-plan / Gradient</label>
+                        <select id="select-gradient" onchange="updateCover()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">
+                            <option value="gradient-dark">Nuit Sombre (Bleu / Noir)</option>
+                            <option value="gradient-fire">Feu & Braises (Rouge / Orange)</option>
+                            <option value="gradient-emerald">Forêt Mystique (Émeraude / Sombre)</option>
+                            <option value="gradient-royal">Royal (Violet / Or)</option>
+                            <option value="gradient-cyber">Cyberpunk (Cyan / Violet)</option>
+                            <option value="gradient-paper">Papier Ancien / Parchemin</option>
+                            <option value="custom-image">Image personnalisée ou IA</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-medium text-slate-300 block mb-1">Importer une image de fond</label>
+                        <input type="file" id="file-bg" accept="image/*" onchange="handleFileUpload(event)" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white">
+                    </div>
+                </div>
+
                 <!-- TAB IA -->
                 <div id="tab-ai" class="space-y-4 hidden">
                     <div class="space-y-3">
                         <div>
                             <label class="text-xs font-medium text-slate-300 block mb-1">Prompt Illustration IA</label>
                             <textarea id="ai-prompt" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100" placeholder="Description de votre illustration...">Un chevalier solitaire au sommet d'une montagne enneigée face à une lune gigantesque, style peinture à l'huile sombre, dramatique</textarea>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-300 block mb-1">Style artistique</label>
+                            <select id="ai-style" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">
+                                <option value="digital painting, highly detailed, cinematic lighting">Peinture Numérique / Fantasy</option>
+                                <option value="dark moody oil painting, dramatic chiaroscuro, classic masterpiece">Peinture à l'Huile Sombre</option>
+                                <option value="minimalist vector art, elegant graphic design, book illustration">Vectoriel / Minimaliste</option>
+                                <option value="retro vintage synthwave, neon glow, cyberpunk aesthetics">Cyberpunk / Néon</option>
+                                <option value="watercolor illustration, soft delicate textures, artistic">Aquarelle Artistique</option>
+                            </select>
                         </div>
                         <button id="btn-generate-ai" onclick="generateAiBackground()" class="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 text-white text-xs font-semibold rounded-lg shadow-lg flex items-center justify-center gap-2">
                             <i data-lucide="wand-2" class="w-4 h-4"></i> Générer l'Illustration (-1 Crédit)
@@ -299,6 +388,8 @@
                             <div id="cover-bg" class="absolute inset-0 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950"></div>
                             <div id="cover-custom-image" class="absolute inset-0 bg-cover bg-center opacity-80"></div>
                             <div id="cover-texture" class="absolute inset-0 texture-vintage pointer-events-none"></div>
+                            <div id="cover-vignette" class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90 pointer-events-none"></div>
+                            <div id="cover-border" class="hidden absolute inset-3 border-2 border-amber-500/40 rounded pointer-events-none z-10"></div>
 
                             <!-- Contenu Textuel -->
                             <div class="relative z-10 space-y-2 text-center">
@@ -393,7 +484,33 @@
             author: "ALEXANDRE DUVAL",
             blurb: "Au cœur des terres dévastées par la magie ancienne, un héros malgré lui découvre un secret capable de faire tomber les empires.",
             customImageUrl: null,
-            bgGradient: 'gradient-dark'
+            titleFont: 'font-cinzel',
+            titleSize: 36,
+            textColor: '#f59e0b',
+            bgGradient: 'gradient-dark',
+            showBorder: false,
+            showTexture: true,
+            showVignette: true
+        };
+
+        // Préréglages par genre littéraire
+        const presets = {
+            fantasy: { titleFont: 'font-cinzel', textColor: '#f59e0b', bgGradient: 'gradient-royal', showBorder: true, showTexture: true },
+            thriller: { titleFont: 'font-montserrat', textColor: '#ef4444', bgGradient: 'gradient-fire', showBorder: false, showTexture: true },
+            romance: { titleFont: 'font-vibes', textColor: '#f472b6', bgGradient: 'gradient-paper', showBorder: false, showTexture: false },
+            scifi: { titleFont: 'font-orbitron', textColor: '#22d3ee', bgGradient: 'gradient-cyber', showBorder: true, showTexture: false },
+            poetry: { titleFont: 'font-cormorant', textColor: '#34d399', bgGradient: 'gradient-emerald', showBorder: false, showTexture: true },
+            classic: { titleFont: 'font-playfair', textColor: '#f8fafc', bgGradient: 'gradient-dark', showBorder: true, showTexture: true }
+        };
+
+        // Dégradés CSS prédéfinis
+        const gradientClasses = {
+            'gradient-dark': 'linear-gradient(to bottom, #0f172a, #1e1b4b, #020617)',
+            'gradient-fire': 'linear-gradient(to bottom, #450a0a, #7f1d1d, #09090b)',
+            'gradient-emerald': 'linear-gradient(to bottom, #064e3b, #022c22, #020617)',
+            'gradient-royal': 'linear-gradient(to bottom, #3b0764, #1e1b4b, #09090b)',
+            'gradient-cyber': 'linear-gradient(to bottom, #155e75, #312e81, #020617)',
+            'gradient-paper': 'linear-gradient(to bottom, #78350f, #451a03, #1c1917)'
         };
 
         // Connexion Firebase réelle (si FIREBASE_CONFIG a été renseignée dans firebase-config.js)
@@ -472,7 +589,7 @@
         }
 
         function switchTab(tabId) {
-            ['tab-kdp', 'tab-presets', 'tab-text', 'tab-ai'].forEach(id => {
+            ['tab-kdp', 'tab-presets', 'tab-text', 'tab-style', 'tab-ai'].forEach(id => {
                 const content = document.getElementById(id);
                 const btn = document.getElementById(`tab-btn-${id.replace('tab-', '')}`);
                 if (id === tabId) {
@@ -533,17 +650,89 @@
             state.author = document.getElementById('input-author').value;
             state.blurb = document.getElementById('input-blurb').value;
 
+            state.titleFont = document.getElementById('select-font-title').value;
+            state.titleSize = document.getElementById('range-title-size').value;
+            state.textColor = document.getElementById('color-text').value;
+            state.bgGradient = document.getElementById('select-gradient').value;
+            state.showBorder = document.getElementById('chk-border').checked;
+            state.showTexture = document.getElementById('chk-texture').checked;
+            state.showVignette = document.getElementById('chk-vignette').checked;
+
             document.getElementById('display-title').textContent = state.title;
             document.getElementById('display-subtitle').textContent = state.subtitle;
             document.getElementById('display-author').textContent = state.author;
+
+            const displayTitle = document.getElementById('display-title');
+            displayTitle.style.fontSize = `${state.titleSize}px`;
+            displayTitle.style.color = state.textColor;
+            displayTitle.className = `${state.titleFont} font-black tracking-wider uppercase leading-tight`;
 
             document.getElementById('back-title-display').textContent = state.title;
             document.getElementById('back-blurb-display').textContent = state.blurb;
             document.getElementById('spine-title-display').textContent = `${state.title} — ${state.author}`;
 
+            // Arrière-plan (gradient ou image personnalisée/IA)
+            const coverBg = document.getElementById('cover-bg');
+            const customImgDiv = document.getElementById('cover-custom-image');
+            if (state.bgGradient === 'custom-image' && state.customImageUrl) {
+                customImgDiv.style.backgroundImage = `url('${state.customImageUrl}')`;
+                customImgDiv.classList.remove('hidden');
+            } else {
+                customImgDiv.classList.add('hidden');
+                customImgDiv.style.backgroundImage = '';
+                coverBg.style.background = gradientClasses[state.bgGradient] || gradientClasses['gradient-dark'];
+            }
+
+            // Effets de finition
+            document.getElementById('cover-border').classList.toggle('hidden', !state.showBorder);
+            document.getElementById('cover-texture').classList.toggle('hidden', !state.showTexture);
+            document.getElementById('cover-vignette').classList.toggle('hidden', !state.showVignette);
+
             if (state.previewMode === 'spread') {
                 document.getElementById('front-cover-spread').innerHTML = document.getElementById('single-cover').innerHTML;
             }
+        }
+
+        // Application d'un préréglage de genre
+        function applyPreset(key) {
+            const p = presets[key];
+            if (!p) return;
+
+            state.titleFont = p.titleFont;
+            state.textColor = p.textColor;
+            state.bgGradient = p.bgGradient;
+            state.showBorder = p.showBorder;
+            state.showTexture = p.showTexture;
+
+            document.getElementById('select-font-title').value = p.titleFont;
+            document.getElementById('color-text').value = p.textColor;
+            document.getElementById('select-gradient').value = p.bgGradient;
+            document.getElementById('chk-border').checked = p.showBorder;
+            document.getElementById('chk-texture').checked = p.showTexture;
+
+            updateCover();
+            showToast(`Thème "${key}" appliqué !`);
+        }
+
+        // Sélection rapide de couleur de texte
+        function setTextColor(hex) {
+            state.textColor = hex;
+            document.getElementById('color-text').value = hex;
+            updateCover();
+        }
+
+        // Import d'une image de fond locale
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                state.customImageUrl = e.target.result;
+                document.getElementById('select-gradient').value = 'custom-image';
+                updateCover();
+                showToast("Image d'arrière-plan importée !");
+            };
+            reader.readAsDataURL(file);
         }
 
         // ============================================================
@@ -615,6 +804,8 @@
             }
 
             const prompt = document.getElementById('ai-prompt').value.trim();
+            const artStyle = document.getElementById('ai-style').value;
+            const fullPrompt = artStyle ? `${prompt}, ${artStyle}` : prompt;
             if (!prompt) return;
 
             document.getElementById('ai-loading').classList.remove('hidden');
@@ -636,7 +827,7 @@
                 const res = await fetch(`${WORKER_URL}/generate-image`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-                    body: JSON.stringify({ prompt })
+                    body: JSON.stringify({ prompt: fullPrompt })
                 });
                 const result = await res.json();
                 if (!result.imageBase64) throw new Error(result.error || 'Erreur inconnue');
