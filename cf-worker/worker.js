@@ -87,7 +87,7 @@ async function verifyFirebaseIdToken(idToken, projectId) {
 
   const now = Math.floor(Date.now() / 1000);
   if (payload.exp < now) throw new Error("Token expiré");
-  if (payload.aud !== projectId) throw new Error("Audience du token incorrecte");
+  if (payload.aud !== projectId) throw new Error(`Audience du token incorrecte (attendu: "${projectId}", reçu: "${payload.aud}")`);
   if (payload.iss !== `https://securetoken.google.com/${projectId}`) throw new Error("Émetteur du token incorrect");
 
   return payload.sub; // uid Firebase
@@ -359,6 +359,7 @@ async function handleNowPaymentsWebhook(request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    env = { ...env, FIREBASE_PROJECT_ID: (env.FIREBASE_PROJECT_ID || "").trim() };
 
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders(env) });
