@@ -222,7 +222,7 @@ async function handleGenerateImage(request, env) {
   });
   const geminiJson = await geminiRes.json();
   if (!geminiJson.predictions?.[0]?.bytesBase64Encoded) {
-    return json({ error: "Échec de la génération IA." }, 500, env);
+    return json({ error: "Échec Gemini: " + JSON.stringify(geminiJson).slice(0, 300) }, 500, env);
   }
 
   await incrementUserCredits(env.FIREBASE_PROJECT_ID, accessToken, uid, -1);
