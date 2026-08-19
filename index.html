@@ -822,6 +822,11 @@
             if (mode === 'spread') {
                 spreadView.classList.remove('hidden');
                 main3dWrapper.classList.add('hidden');
+                // Toujours repartir d'une couverture "à plat" avant de cloner dans la planche —
+                // sinon l'inclinaison 3D reste collée sur l'élément source et se retrouve clonée,
+                // ce qui laisse des coins vides dans le gabarit imprimable.
+                singleCover.classList.remove('book-3d');
+                singleCover.style.transform = "none";
                 syncSpreadView();
             } else {
                 spreadView.classList.add('hidden');
