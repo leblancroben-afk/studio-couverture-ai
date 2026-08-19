@@ -828,6 +828,7 @@
                 singleCover.classList.remove('book-3d');
                 singleCover.style.transform = "none";
                 syncSpreadView();
+                fitSpreadToViewport();
             } else {
                 spreadView.classList.add('hidden');
                 main3dWrapper.classList.remove('hidden');
@@ -852,7 +853,25 @@
             const frontSpread = document.getElementById('front-cover-spread');
             frontSpread.innerHTML = '';
             frontSpread.appendChild(clone);
+            fitSpreadToViewport();
         }
+
+        // Réduit la planche complète (dos + tranche + face, 594px de large) pour qu'elle tienne
+        // entièrement dans la largeur de l'écran — évite qu'une partie (ex: fin du titre) sorte
+        // du cadre visible sans indication claire qu'il faut scroller.
+        function fitSpreadToViewport() {
+            if (state.previewMode !== 'spread') return;
+            const spreadView = document.getElementById('spread-view');
+            const main = document.querySelector('main');
+            const naturalWidth = 594; // 280px dos + 34px tranche + 280px face
+            const available = main.clientWidth - 24; // marge de sécurité
+            const scale = Math.min(1, available / naturalWidth);
+            spreadView.style.zoom = scale;
+        }
+
+        window.addEventListener('resize', () => {
+            if (state.previewMode === 'spread') fitSpreadToViewport();
+        });
 
         function toggleProMode() {
             state.isProMode = !state.isProMode;
