@@ -8,7 +8,7 @@
     <!-- Polices locales (remplace Google Fonts CDN — voir assets/fonts/LICENSE.txt) -->
     <link rel="stylesheet" href="assets/css/fonts.css">
     <!-- Tailwind CSS compilé statiquement (remplace le script CDN cdn.tailwindcss.com, non recommandé en production) -->
-    <link rel="stylesheet" href="assets/css/tailwind.min.css?v=1d1455b1">
+    <link rel="stylesheet" href="assets/css/tailwind.min.css?v=8a25a9d9">
     <!-- html2canvas & jsPDF (locaux) -->
     <script src="assets/js/vendor/html2canvas.min.js"></script>
     <script src="assets/js/vendor/jspdf.umd.min.js"></script>
@@ -59,71 +59,71 @@
 <body class="flex flex-col h-screen overflow-hidden bg-slate-950 text-slate-100">
 
     <!-- HEADER -->
-    <header class="h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur px-6 flex items-center justify-between z-20 shrink-0">
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur px-3 py-2 md:px-6 md:h-16 flex flex-wrap md:flex-nowrap items-center justify-between gap-2 z-20 shrink-0">
         <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <i data-lucide="book-open" class="w-6 h-6 text-white"></i>
+            <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
+                <i data-lucide="book-open" class="w-5 h-5 md:w-6 md:h-6 text-white"></i>
             </div>
             <div>
-                <h1 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-                    Studio Couverture <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 font-semibold">KDP Edition Pro</span>
+                <h1 class="font-bold text-sm md:text-lg text-slate-100 flex items-center gap-2">
+                    Studio Couverture <span class="text-[10px] md:text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30 font-semibold">KDP Edition Pro</span>
                 </h1>
-                <p class="text-xs text-slate-400">Générateur Commercial e-Book & Print Amazon KDP</p>
+                <p class="hidden sm:block text-xs text-slate-400">Générateur Commercial e-Book & Print Amazon KDP</p>
             </div>
         </div>
 
         <!-- Mode de prévisualisation -->
-        <div class="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800">
-            <button id="btn-view-2d" onclick="setPreviewMode('2d')" class="px-3 py-1.5 text-xs font-medium rounded-md transition flex items-center gap-1.5 bg-indigo-600 text-white">
+        <div class="order-3 md:order-none w-full md:w-auto flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 overflow-x-auto">
+            <button id="btn-view-2d" onclick="setPreviewMode('2d')" class="shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition flex items-center gap-1.5 bg-indigo-600 text-white whitespace-nowrap">
                 <i data-lucide="layout" class="w-3.5 h-3.5"></i> Couverture 2D
             </button>
-            <button id="btn-view-3d" onclick="setPreviewMode('3d')" class="px-3 py-1.5 text-xs font-medium rounded-md transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200">
+            <button id="btn-view-3d" onclick="setPreviewMode('3d')" class="shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200 whitespace-nowrap">
                 <i data-lucide="box" class="w-3.5 h-3.5"></i> Rendus 3D
             </button>
-            <button id="btn-view-spread" onclick="setPreviewMode('spread')" class="px-3 py-1.5 text-xs font-medium rounded-md transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200">
+            <button id="btn-view-spread" onclick="setPreviewMode('spread')" class="shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200 whitespace-nowrap">
                 <i data-lucide="book-copy" class="w-3.5 h-3.5"></i> Planche KDP Broché
             </button>
         </div>
 
         <!-- Crédits & Actions -->
-        <div class="flex items-center space-x-3">
-            <button onclick="openCreditsModal()" id="credit-badge" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs transition">
+        <div class="order-2 md:order-none flex items-center gap-2 overflow-x-auto max-w-full">
+            <button onclick="openCreditsModal()" id="credit-badge" class="shrink-0 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs transition whitespace-nowrap">
                 <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
                 <span class="text-slate-300">Crédits IA: <strong id="user-credits-count" class="text-amber-400">3</strong></span>
                 <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-slate-400"></i>
             </button>
-            <button onclick="toggleProMode()" id="btn-toggle-pro" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg border border-slate-700 text-amber-400 flex items-center gap-1.5">
+            <button onclick="toggleProMode()" id="btn-toggle-pro" class="shrink-0 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg border border-slate-700 text-amber-400 flex items-center gap-1.5 whitespace-nowrap">
                 <i data-lucide="crown" class="w-3.5 h-3.5"></i> <span id="lbl-pro-mode">Mode Démo (Filigrane)</span>
             </button>
-            <button onclick="exportCover('png')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg border border-slate-700 text-slate-200 flex items-center gap-1.5">
+            <button onclick="exportCover('png')" class="shrink-0 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg border border-slate-700 text-slate-200 flex items-center gap-1.5 whitespace-nowrap">
                 <i data-lucide="image" class="w-3.5 h-3.5"></i> PNG E-Book
             </button>
-            <button onclick="exportCover('pdf')" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold text-xs rounded-lg shadow-lg shadow-amber-500/20 transition flex items-center gap-2">
+            <button onclick="exportCover('pdf')" class="shrink-0 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold text-xs rounded-lg shadow-lg shadow-amber-500/20 transition flex items-center gap-2 whitespace-nowrap">
                 <i data-lucide="file-down" class="w-4 h-4"></i> Export PDF KDP (300 DPI)
             </button>
         </div>
     </header>
 
     <!-- MAIN BODY -->
-    <div class="flex flex-1 overflow-hidden">
+    <div class="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden">
 
         <!-- PANNEAU CONFIGURATION (GAUCHE) -->
-        <aside class="w-96 border-r border-slate-800 bg-slate-900 flex flex-col z-10 shrink-0">
+        <aside class="w-full md:w-96 max-h-[55vh] md:max-h-none border-b md:border-b-0 md:border-r border-slate-800 bg-slate-900 flex flex-col z-10 shrink-0">
             <!-- Tabs -->
-            <div class="flex border-b border-slate-800 bg-slate-950 text-xs">
-                <button onclick="switchTab('tab-kdp')" id="tab-btn-kdp" class="flex-1 py-3 font-medium text-amber-400 border-b-2 border-amber-400 flex flex-col items-center gap-1">
+            <div class="flex overflow-x-auto border-b border-slate-800 bg-slate-950 text-xs">
+                <button onclick="switchTab('tab-kdp')" id="tab-btn-kdp" class="shrink-0 min-w-[72px] flex-1 py-3 font-medium text-amber-400 border-b-2 border-amber-400 flex flex-col items-center gap-1">
                     <i data-lucide="calculator" class="w-4 h-4"></i> Format KDP
                 </button>
-                <button onclick="switchTab('tab-presets')" id="tab-btn-presets" class="flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
+                <button onclick="switchTab('tab-presets')" id="tab-btn-presets" class="shrink-0 min-w-[72px] flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
                     <i data-lucide="sparkles" class="w-4 h-4"></i> Thèmes
                 </button>
-                <button onclick="switchTab('tab-text')" id="tab-btn-text" class="flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
+                <button onclick="switchTab('tab-text')" id="tab-btn-text" class="shrink-0 min-w-[72px] flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
                     <i data-lucide="type" class="w-4 h-4"></i> Textes
                 </button>
-                <button onclick="switchTab('tab-style')" id="tab-btn-style" class="flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
+                <button onclick="switchTab('tab-style')" id="tab-btn-style" class="shrink-0 min-w-[72px] flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
                     <i data-lucide="palette" class="w-4 h-4"></i> Styles
                 </button>
-                <button onclick="switchTab('tab-ai')" id="tab-btn-ai" class="flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
+                <button onclick="switchTab('tab-ai')" id="tab-btn-ai" class="shrink-0 min-w-[72px] flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1">
                     <i data-lucide="wand-2" class="w-4 h-4"></i> Image IA
                 </button>
             </div>
@@ -449,7 +449,7 @@
         </aside>
 
         <!-- ZONE DE PRÉVISUALISATION (CENTRE) -->
-        <main class="flex-1 bg-slate-950 p-6 flex items-center justify-center relative overflow-auto">
+        <main class="flex-1 bg-slate-950 p-3 md:p-6 flex items-center justify-center relative overflow-auto">
             <div class="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-30 pointer-events-none"></div>
 
             <div id="preview-wrapper" class="relative z-10 my-auto flex items-center justify-center">
