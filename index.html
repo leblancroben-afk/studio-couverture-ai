@@ -8,7 +8,7 @@
     <!-- Polices locales (remplace Google Fonts CDN — voir assets/fonts/LICENSE.txt) -->
     <link rel="stylesheet" href="assets/css/fonts.css">
     <!-- Tailwind CSS compilé statiquement (remplace le script CDN cdn.tailwindcss.com, non recommandé en production) -->
-    <link rel="stylesheet" href="assets/css/tailwind.min.css?v=172415ce">
+    <link rel="stylesheet" href="assets/css/tailwind.min.css?v=86773107">
     <!-- html2canvas & jsPDF (locaux) -->
     <script src="assets/js/vendor/html2canvas.min.js"></script>
     <script src="assets/js/vendor/jspdf.umd.min.js"></script>
@@ -309,9 +309,85 @@
                         </select>
                     </div>
 
-                    <div>
-                        <label class="text-xs font-medium text-slate-300 block mb-1">Importer une image de fond</label>
-                        <input type="file" id="file-bg" accept="image/*" onchange="handleFileUpload(event)" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white">
+                    <!-- STUDIO IMAGE PERSONNELLE -->
+                    <div class="pt-4 border-t border-slate-800 space-y-3">
+                        <h4 class="text-xs font-semibold text-slate-300">Image Personnelle (illustrateur, photo...)</h4>
+
+                        <!-- Dropzone -->
+                        <div id="dropzone" onclick="document.getElementById('file-bg').click()"
+                             ondragover="event.preventDefault(); this.classList.add('border-indigo-500', 'bg-indigo-950/30')"
+                             ondragleave="this.classList.remove('border-indigo-500', 'bg-indigo-950/30')"
+                             ondrop="handleFileDrop(event)"
+                             class="border-2 border-dashed border-slate-700 rounded-xl p-4 text-center cursor-pointer hover:border-indigo-500 transition space-y-1">
+                            <i data-lucide="upload-cloud" class="w-5 h-5 text-slate-500 mx-auto"></i>
+                            <p class="text-[11px] text-slate-400">Glissez une image ici ou <span class="text-indigo-400 font-medium">parcourir</span></p>
+                            <p class="text-[9px] text-slate-600">JPG, PNG — 300 DPI recommandé pour l'impression KDP</p>
+                        </div>
+                        <input type="file" id="file-bg" accept="image/*" onchange="handleFileUpload(event.target.files[0])" class="hidden">
+
+                        <!-- Miniature + infos -->
+                        <div id="image-thumbnail-card" class="hidden flex items-center gap-3 bg-slate-800/60 border border-slate-700 rounded-lg p-2">
+                            <img id="image-thumbnail" class="w-14 h-14 object-cover rounded-md border border-slate-700" src="">
+                            <div class="flex-1 min-w-0 space-y-0.5">
+                                <div id="image-filename" class="text-[11px] text-slate-200 truncate"></div>
+                                <div id="image-dimensions" class="text-[10px] text-slate-400"></div>
+                                <div id="image-size" class="text-[10px] text-slate-500"></div>
+                            </div>
+                            <button onclick="removeUploadedImage()" class="text-slate-400 hover:text-red-400 shrink-0" title="Supprimer">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <!-- Alerte DPI -->
+                        <div id="dpi-warning" class="hidden text-[10px] px-2.5 py-2 rounded-lg flex items-start gap-1.5"></div>
+
+                        <!-- Contrôles (visibles uniquement si une image est chargée) -->
+                        <div id="image-controls" class="hidden space-y-3">
+                            <div>
+                                <label class="text-[11px] font-medium text-slate-300 block mb-1">Mode d'affichage</label>
+                                <div class="grid grid-cols-3 gap-1.5">
+                                    <button onclick="setImageFit('cover')" id="fit-btn-cover" class="fit-btn text-[10px] py-1.5 rounded-lg border border-indigo-500 bg-indigo-600 text-white">Remplir</button>
+                                    <button onclick="setImageFit('contain')" id="fit-btn-contain" class="fit-btn text-[10px] py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300">Ajuster</button>
+                                    <button onclick="setImageFit('stretch')" id="fit-btn-stretch" class="fit-btn text-[10px] py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300">Étirer</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-medium text-slate-300 block mb-1">Zoom (<span id="lbl-zoom">100</span>%)</label>
+                                <input type="range" id="range-img-zoom" min="50" max="200" value="100" oninput="updateCover()" class="w-full accent-indigo-500">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-[11px] font-medium text-slate-300 block mb-1">Position X</label>
+                                    <input type="range" id="range-img-x" min="0" max="100" value="50" oninput="updateCover()" class="w-full accent-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="text-[11px] font-medium text-slate-300 block mb-1">Position Y</label>
+                                    <input type="range" id="range-img-y" min="0" max="100" value="50" oninput="updateCover()" class="w-full accent-indigo-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-medium text-slate-300 block mb-1">Filtre de style</label>
+                                <div class="grid grid-cols-3 gap-1.5">
+                                    <button onclick="setImagePreset('none')" id="preset-btn-none" class="preset-btn text-[10px] py-1.5 rounded-lg border border-indigo-500 bg-indigo-600 text-white">Aucun</button>
+                                    <button onclick="setImagePreset('grayscale')" id="preset-btn-grayscale" class="preset-btn text-[10px] py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300">N&B</button>
+                                    <button onclick="setImagePreset('sepia')" id="preset-btn-sepia" class="preset-btn text-[10px] py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300">Sépia</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-[11px] font-medium text-slate-300 block mb-1">Luminosité (<span id="lbl-brightness">100</span>%)</label>
+                                    <input type="range" id="range-img-brightness" min="30" max="150" value="100" oninput="updateCover()" class="w-full accent-amber-500">
+                                </div>
+                                <div>
+                                    <label class="text-[11px] font-medium text-slate-300 block mb-1">Contraste (<span id="lbl-contrast">100</span>%)</label>
+                                    <input type="range" id="range-img-contrast" min="50" max="150" value="100" oninput="updateCover()" class="w-full accent-amber-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-medium text-slate-300 block mb-1">Flou (<span id="lbl-blur">0</span>px)</label>
+                                <input type="range" id="range-img-blur" min="0" max="10" value="0" oninput="updateCover()" class="w-full accent-amber-500">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -510,6 +586,14 @@
             publisher: "ÉDITIONS DU SOMMET",
             isbn: "978-2-07-058462-8",
             customImageUrl: null,
+            imageZoom: 100,
+            imagePosX: 50,
+            imagePosY: 50,
+            imageFit: 'cover',
+            imageFilterPreset: 'none',
+            imageBrightness: 100,
+            imageContrast: 100,
+            imageBlur: 0,
             titleFont: 'font-cinzel',
             titleSize: 36,
             textColor: '#f59e0b',
@@ -711,9 +795,48 @@
             if (state.bgGradient === 'custom-image' && state.customImageUrl) {
                 customImgDiv.style.backgroundImage = `url('${state.customImageUrl}')`;
                 customImgDiv.classList.remove('hidden');
+
+                // Lire les contrôles image (uniquement présents/visibles si une image est chargée)
+                const zoomEl = document.getElementById('range-img-zoom');
+                const xEl = document.getElementById('range-img-x');
+                const yEl = document.getElementById('range-img-y');
+                const brightEl = document.getElementById('range-img-brightness');
+                const contrastEl = document.getElementById('range-img-contrast');
+                const blurEl = document.getElementById('range-img-blur');
+                if (zoomEl) {
+                    state.imageZoom = zoomEl.value;
+                    state.imagePosX = xEl.value;
+                    state.imagePosY = yEl.value;
+                    state.imageBrightness = brightEl.value;
+                    state.imageContrast = contrastEl.value;
+                    state.imageBlur = blurEl.value;
+                    document.getElementById('lbl-zoom').textContent = state.imageZoom;
+                    document.getElementById('lbl-brightness').textContent = state.imageBrightness;
+                    document.getElementById('lbl-contrast').textContent = state.imageContrast;
+                    document.getElementById('lbl-blur').textContent = state.imageBlur;
+                }
+
+                // Mode d'affichage (fit) + zoom
+                if (state.imageFit === 'stretch') {
+                    customImgDiv.style.backgroundSize = '100% 100%';
+                    customImgDiv.style.backgroundPosition = 'center';
+                } else if (state.imageFit === 'contain') {
+                    customImgDiv.style.backgroundSize = `contain`;
+                    customImgDiv.style.backgroundPosition = `${state.imagePosX}% ${state.imagePosY}%`;
+                    customImgDiv.style.backgroundRepeat = 'no-repeat';
+                } else {
+                    customImgDiv.style.backgroundSize = `${state.imageZoom}%`;
+                    customImgDiv.style.backgroundPosition = `${state.imagePosX}% ${state.imagePosY}%`;
+                }
+
+                // Filtres visuels
+                const presetFilter = state.imageFilterPreset === 'grayscale' ? 'grayscale(100%)'
+                    : state.imageFilterPreset === 'sepia' ? 'sepia(80%)' : '';
+                customImgDiv.style.filter = `brightness(${state.imageBrightness}%) contrast(${state.imageContrast}%) blur(${state.imageBlur}px) ${presetFilter}`;
             } else {
                 customImgDiv.classList.add('hidden');
                 customImgDiv.style.backgroundImage = '';
+                customImgDiv.style.filter = '';
                 coverBg.style.background = gradientClasses[state.bgGradient] || gradientClasses['gradient-dark'];
             }
 
@@ -755,18 +878,111 @@
             updateCover();
         }
 
-        // Import d'une image de fond locale
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        // ============================================================
+        //  STUDIO IMAGE PERSONNELLE (upload, DPI, zoom/position, filtres)
+        // ============================================================
+
+        function handleFileDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('border-indigo-500', 'bg-indigo-950/30');
+            const file = event.dataTransfer.files[0];
+            if (file) handleFileUpload(file);
+        }
+
+        function handleFileUpload(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                showToast("Veuillez sélectionner un fichier image valide.", true);
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = (e) => {
-                state.customImageUrl = e.target.result;
-                document.getElementById('select-gradient').value = 'custom-image';
-                updateCover();
-                showToast("Image d'arrière-plan importée !");
+                const img = new Image();
+                img.onload = () => {
+                    state.customImageUrl = e.target.result;
+                    state.imageZoom = 100;
+                    state.imagePosX = 50;
+                    state.imagePosY = 50;
+                    state.imageFit = 'cover';
+                    state.imageFilterPreset = 'none';
+                    state.imageBrightness = 100;
+                    state.imageContrast = 100;
+                    state.imageBlur = 0;
+
+                    document.getElementById('select-gradient').value = 'custom-image';
+                    document.getElementById('image-thumbnail').src = e.target.result;
+                    document.getElementById('image-filename').textContent = file.name;
+                    document.getElementById('image-dimensions').textContent = `${img.naturalWidth} × ${img.naturalHeight} px`;
+                    const sizeKB = file.size / 1024;
+                    document.getElementById('image-size').textContent = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
+                    document.getElementById('image-thumbnail-card').classList.remove('hidden');
+                    document.getElementById('image-controls').classList.remove('hidden');
+
+                    // Réinitialiser les sliders visuellement
+                    document.getElementById('range-img-zoom').value = 100;
+                    document.getElementById('range-img-x').value = 50;
+                    document.getElementById('range-img-y').value = 50;
+                    document.getElementById('range-img-brightness').value = 100;
+                    document.getElementById('range-img-contrast').value = 100;
+                    document.getElementById('range-img-blur').value = 0;
+                    setImageFit('cover');
+                    setImagePreset('none');
+
+                    // Alerte qualité DPI (basée sur la largeur — recommandation KDP ~300 DPI)
+                    const dpiEl = document.getElementById('dpi-warning');
+                    dpiEl.classList.remove('hidden');
+                    if (img.naturalWidth < 1500) {
+                        dpiEl.className = "text-[10px] px-2.5 py-2 rounded-lg flex items-start gap-1.5 bg-red-950/40 border border-red-800/50 text-red-300";
+                        dpiEl.innerHTML = `<i data-lucide="alert-triangle" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i><span>Résolution trop faible pour l'impression KDP — risque de flou. Utilisez une image d'au moins 1500px de large (idéalement 3000px+).</span>`;
+                    } else if (img.naturalWidth >= 3000) {
+                        dpiEl.className = "text-[10px] px-2.5 py-2 rounded-lg flex items-start gap-1.5 bg-emerald-950/40 border border-emerald-800/50 text-emerald-300";
+                        dpiEl.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i><span>Qualité HD optimale pour l'impression (≈300 DPI).</span>`;
+                    } else {
+                        dpiEl.className = "text-[10px] px-2.5 py-2 rounded-lg flex items-start gap-1.5 bg-amber-950/40 border border-amber-800/50 text-amber-300";
+                        dpiEl.innerHTML = `<i data-lucide="info" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i><span>Résolution correcte pour l'ebook, mais vérifiez la netteté avant impression papier.</span>`;
+                    }
+                    lucide.createIcons();
+
+                    updateCover();
+                    showToast("Image importée avec succès !");
+                };
+                img.src = e.target.result;
             };
             reader.readAsDataURL(file);
+        }
+
+        function removeUploadedImage() {
+            state.customImageUrl = null;
+            document.getElementById('file-bg').value = '';
+            document.getElementById('image-thumbnail-card').classList.add('hidden');
+            document.getElementById('image-controls').classList.add('hidden');
+            document.getElementById('dpi-warning').classList.add('hidden');
+            document.getElementById('select-gradient').value = 'gradient-dark';
+            state.bgGradient = 'gradient-dark';
+            updateCover();
+            showToast("Image retirée.");
+        }
+
+        function setImageFit(fit) {
+            state.imageFit = fit;
+            ['cover', 'contain', 'stretch'].forEach(f => {
+                const btn = document.getElementById(`fit-btn-${f}`);
+                btn.className = f === fit
+                    ? "fit-btn text-[10px] py-1.5 rounded-lg border border-indigo-500 bg-indigo-600 text-white"
+                    : "fit-btn text-[10px] py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300";
+            });
+            updateCover();
+        }
+
+        function setImagePreset(preset) {
+            state.imageFilterPreset = preset;
+            ['none', 'grayscale', 'sepia'].forEach(p => {
+                const btn = document.getElementById(`preset-btn-${p}`);
+                btn.className = p === preset
+                    ? "preset-btn text-[10px] py-1.5 rounded-lg border border-indigo-500 bg-indigo-600 text-white"
+                    : "preset-btn text-[10px] py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300";
+            });
+            updateCover();
         }
 
         // ============================================================
@@ -866,7 +1082,18 @@
                 const result = await res.json();
                 if (!result.imageBase64) throw new Error(result.error || 'Erreur inconnue');
 
-                document.getElementById('cover-custom-image').style.backgroundImage = `url(data:image/png;base64,${result.imageBase64})`;
+                state.customImageUrl = `data:image/png;base64,${result.imageBase64}`;
+                state.imageFit = 'cover';
+                state.imageZoom = 100;
+                state.imagePosX = 50;
+                state.imagePosY = 50;
+                document.getElementById('select-gradient').value = 'custom-image';
+                document.getElementById('image-thumbnail-card').classList.add('hidden');
+                document.getElementById('image-controls').classList.remove('hidden');
+                document.getElementById('dpi-warning').classList.add('hidden');
+                setImageFit('cover');
+                setImagePreset('none');
+                updateCover();
                 document.getElementById('ai-loading').classList.add('hidden');
                 showToast("Illustration générée via Gemini (-1 crédit) !");
                 // Le solde de crédits est mis à jour automatiquement via listenToUserCredits (onSnapshot)
