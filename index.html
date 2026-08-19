@@ -939,13 +939,18 @@
                 if (state.imageFit === 'stretch') {
                     customImgDiv.style.backgroundSize = '100% 100%';
                     customImgDiv.style.backgroundPosition = 'center';
+                    customImgDiv.style.transform = 'none';
                 } else if (state.imageFit === 'contain') {
                     customImgDiv.style.backgroundSize = `contain`;
                     customImgDiv.style.backgroundPosition = `${state.imagePosX}% ${state.imagePosY}%`;
                     customImgDiv.style.backgroundRepeat = 'no-repeat';
+                    customImgDiv.style.transform = `scale(${state.imageZoom / 100})`;
                 } else {
-                    customImgDiv.style.backgroundSize = `${state.imageZoom}%`;
+                    // "cover" : remplit toujours 100% du cadre (jamais de bande vide),
+                    // le zoom s'applique ensuite en agrandissement pur via transform (jamais en réduction du remplissage)
+                    customImgDiv.style.backgroundSize = 'cover';
                     customImgDiv.style.backgroundPosition = `${state.imagePosX}% ${state.imagePosY}%`;
+                    customImgDiv.style.transform = `scale(${state.imageZoom / 100})`;
                 }
 
                 // Filtres visuels
