@@ -787,15 +787,18 @@
         }
 
         function switchTab(tabId) {
+            const activeClass = "shrink-0 min-w-[72px] flex-1 py-3 font-medium text-amber-400 border-b-2 border-amber-400 flex flex-col items-center gap-1";
+            const inactiveClass = "shrink-0 min-w-[72px] flex-1 py-3 font-medium text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex flex-col items-center gap-1";
+
             ['tab-kdp', 'tab-presets', 'tab-text', 'tab-style', 'tab-ai'].forEach(id => {
                 const content = document.getElementById(id);
                 const btn = document.getElementById(`tab-btn-${id.replace('tab-', '')}`);
                 if (id === tabId) {
                     content.classList.remove('hidden');
-                    btn.classList.add('text-amber-400', 'border-amber-400');
+                    btn.className = activeClass;
                 } else {
                     content.classList.add('hidden');
-                    btn.classList.remove('text-amber-400', 'border-amber-400');
+                    btn.className = inactiveClass;
                 }
             });
         }
