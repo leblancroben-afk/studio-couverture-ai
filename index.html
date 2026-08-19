@@ -8,7 +8,7 @@
     <!-- Polices locales (remplace Google Fonts CDN — voir assets/fonts/LICENSE.txt) -->
     <link rel="stylesheet" href="assets/css/fonts.css">
     <!-- Tailwind CSS compilé statiquement (remplace le script CDN cdn.tailwindcss.com, non recommandé en production) -->
-    <link rel="stylesheet" href="assets/css/tailwind.min.css?v=86773107">
+    <link rel="stylesheet" href="assets/css/tailwind.min.css?v=9c3fba44">
     <!-- html2canvas & jsPDF (locaux) -->
     <script src="assets/js/vendor/html2canvas.min.js"></script>
     <script src="assets/js/vendor/jspdf.umd.min.js"></script>
@@ -387,6 +387,18 @@
                                 <label class="text-[11px] font-medium text-slate-300 block mb-1">Flou (<span id="lbl-blur">0</span>px)</label>
                                 <input type="range" id="range-img-blur" min="0" max="10" value="0" oninput="updateCover()" class="w-full accent-amber-500">
                             </div>
+                            <div>
+                                <label class="text-[11px] font-medium text-slate-300 block mb-1">Agrandissement (Upscale gratuit)</label>
+                                <div class="grid grid-cols-2 gap-1.5">
+                                    <button onclick="upscaleImage(2)" class="text-[10px] py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center gap-1">
+                                        <i data-lucide="maximize-2" class="w-3 h-3"></i> Agrandir 2×
+                                    </button>
+                                    <button onclick="upscaleImage(4)" class="text-[10px] py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center gap-1">
+                                        <i data-lucide="maximize-2" class="w-3 h-3"></i> Agrandir 4×
+                                    </button>
+                                </div>
+                                <p class="text-[9px] text-slate-600 mt-1">Interpolation instantanée, gratuite, sans serveur.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -409,11 +421,23 @@
                             </select>
                         </div>
                         <button id="btn-generate-ai" onclick="generateAiBackground()" class="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 text-white text-xs font-semibold rounded-lg shadow-lg flex items-center justify-center gap-2">
-                            <i data-lucide="wand-2" class="w-4 h-4"></i> Générer l'Illustration (-1 Crédit)
+                            <i data-lucide="wand-2" class="w-4 h-4"></i> <span id="btn-generate-label">Générer l'Illustration (-1 Crédit)</span>
                         </button>
                         <div id="ai-loading" class="hidden text-center py-3">
                             <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-amber-500 border-t-transparent"></div>
                             <p class="text-xs text-amber-400 mt-1">Génération via Gemini Cloud Function...</p>
+                        </div>
+
+                        <!-- BYOK : clé API personnelle -->
+                        <div class="pt-3 border-t border-slate-800 space-y-2">
+                            <label class="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="chk-byok" onchange="toggleByok()" class="rounded bg-slate-900 border-slate-700 text-indigo-500">
+                                Utiliser ma propre clé API Gemini (illimité, sans crédits)
+                            </label>
+                            <div id="byok-key-wrapper" class="hidden space-y-1">
+                                <input type="password" id="byok-api-key" placeholder="Collez votre clé API Gemini (AIza...)" oninput="saveByokKey(); updateGenerateButtonLabel();" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100">
+                                <p class="text-[9px] text-slate-500">Stockée uniquement dans votre navigateur. Appel direct à l'API Google, aucun crédit du site n'est utilisé.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -673,7 +697,68 @@
             calculateKDPDimensions();
             updateCover();
             initFirebase();
+
+            // Restaurer la configuration BYOK depuis le navigateur
+            const byokEnabled = localStorage.getItem('studio_byok_enabled') === '1';
+            document.getElementById('chk-byok').checked = byokEnabled;
+            document.getElementById('byok-key-wrapper').classList.toggle('hidden', !byokEnabled);
+            document.getElementById('byok-api-key').value = localStorage.getItem('studio_byok_gemini_key') || '';
+            updateGenerateButtonLabel();
         });
+
+        function toggleByok() {
+            const enabled = document.getElementById('chk-byok').checked;
+            document.getElementById('byok-key-wrapper').classList.toggle('hidden', !enabled);
+            localStorage.setItem('studio_byok_enabled', enabled ? '1' : '0');
+            updateGenerateButtonLabel();
+        }
+
+        function saveByokKey() {
+            localStorage.setItem('studio_byok_gemini_key', document.getElementById('byok-api-key').value.trim());
+        }
+
+        function updateGenerateButtonLabel() {
+            const byokActive = document.getElementById('chk-byok').checked && document.getElementById('byok-api-key').value.trim().length > 0;
+            document.getElementById('btn-generate-label').textContent = byokActive
+                ? "Générer l'Illustration (clé personnelle)"
+                : "Générer l'Illustration (-1 Crédit)";
+        }
+
+        // Upscale (agrandissement) par interpolation Canvas — gratuit, instantané, sans serveur
+        function upscaleImage(factor) {
+            if (!state.customImageUrl) {
+                showToast("Importez d'abord une image.", true);
+                return;
+            }
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth * factor;
+                canvas.height = img.naturalHeight * factor;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                state.customImageUrl = canvas.toDataURL('image/png');
+                document.getElementById('image-thumbnail').src = state.customImageUrl;
+                document.getElementById('image-dimensions').textContent = `${canvas.width} × ${canvas.height} px (agrandi ${factor}×)`;
+
+                const dpiEl = document.getElementById('dpi-warning');
+                dpiEl.classList.remove('hidden');
+                if (canvas.width >= 3000) {
+                    dpiEl.className = "text-[10px] px-2.5 py-2 rounded-lg flex items-start gap-1.5 bg-emerald-950/40 border border-emerald-800/50 text-emerald-300";
+                    dpiEl.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i><span>Qualité HD optimale après agrandissement (≈300 DPI).</span>`;
+                } else {
+                    dpiEl.className = "text-[10px] px-2.5 py-2 rounded-lg flex items-start gap-1.5 bg-amber-950/40 border border-amber-800/50 text-amber-300";
+                    dpiEl.innerHTML = `<i data-lucide="info" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i><span>Résolution améliorée, mais encore perfectible pour l'impression papier.</span>`;
+                }
+                lucide.createIcons();
+                updateCover();
+                showToast(`Image agrandie ${factor}× avec succès !`);
+            };
+            img.src = state.customImageUrl;
+        }
 
         // Calculateur de Tranche KDP Amazon
         function calculateKDPDimensions() {
@@ -1046,17 +1131,46 @@
             }
         }
 
-        // Appel du Cloudflare Worker (route /generate-image) — remplace les Firebase Cloud Functions
+        // Appel du Cloudflare Worker (route /generate-image) OU appel direct BYOK — remplace les Firebase Cloud Functions
         async function generateAiBackground() {
-            if (state.credits <= 0) {
-                showToast("Crédits insuffisants. Achetez des crédits Pro.", true);
-                return;
-            }
-
             const prompt = document.getElementById('ai-prompt').value.trim();
             const artStyle = document.getElementById('ai-style').value;
             const fullPrompt = artStyle ? `${prompt}, ${artStyle}` : prompt;
             if (!prompt) return;
+
+            const byokEnabled = document.getElementById('chk-byok').checked;
+            const byokKey = document.getElementById('byok-api-key').value.trim();
+
+            // Chemin BYOK : appel direct à l'API Gemini depuis le navigateur, aucun crédit du site utilisé
+            if (byokEnabled && byokKey) {
+                document.getElementById('ai-loading').classList.remove('hidden');
+                try {
+                    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${byokKey}`;
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
+                    });
+                    const data = await res.json();
+                    const imagePart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                    if (!imagePart) throw new Error(data.error?.message || 'Réponse invalide de l\'API');
+
+                    applyGeneratedImage(imagePart.inlineData.data);
+                    showToast("Illustration générée avec votre clé personnelle !");
+                } catch (err) {
+                    console.error(err);
+                    showToast("Erreur avec votre clé API personnelle : " + err.message, true);
+                } finally {
+                    document.getElementById('ai-loading').classList.add('hidden');
+                }
+                return;
+            }
+
+            // Chemin standard : crédits du site via le Worker
+            if (state.credits <= 0) {
+                showToast("Crédits insuffisants. Achetez des crédits Pro, ou activez votre propre clé API (BYOK).", true);
+                return;
+            }
 
             document.getElementById('ai-loading').classList.remove('hidden');
 
@@ -1082,18 +1196,7 @@
                 const result = await res.json();
                 if (!result.imageBase64) throw new Error(result.error || 'Erreur inconnue');
 
-                state.customImageUrl = `data:image/png;base64,${result.imageBase64}`;
-                state.imageFit = 'cover';
-                state.imageZoom = 100;
-                state.imagePosX = 50;
-                state.imagePosY = 50;
-                document.getElementById('select-gradient').value = 'custom-image';
-                document.getElementById('image-thumbnail-card').classList.add('hidden');
-                document.getElementById('image-controls').classList.remove('hidden');
-                document.getElementById('dpi-warning').classList.add('hidden');
-                setImageFit('cover');
-                setImagePreset('none');
-                updateCover();
+                applyGeneratedImage(result.imageBase64);
                 document.getElementById('ai-loading').classList.add('hidden');
                 showToast("Illustration générée via Gemini (-1 crédit) !");
                 // Le solde de crédits est mis à jour automatiquement via listenToUserCredits (onSnapshot)
@@ -1105,6 +1208,22 @@
                     : "Erreur lors de la génération IA. Vérifiez la configuration du Worker.";
                 showToast(msg, true);
             }
+        }
+
+        // Applique une image générée (base64) à l'état + à l'UI des contrôles image
+        function applyGeneratedImage(imageBase64) {
+            state.customImageUrl = `data:image/png;base64,${imageBase64}`;
+            state.imageFit = 'cover';
+            state.imageZoom = 100;
+            state.imagePosX = 50;
+            state.imagePosY = 50;
+            document.getElementById('select-gradient').value = 'custom-image';
+            document.getElementById('image-thumbnail-card').classList.add('hidden');
+            document.getElementById('image-controls').classList.remove('hidden');
+            document.getElementById('dpi-warning').classList.add('hidden');
+            setImageFit('cover');
+            setImagePreset('none');
+            updateCover();
         }
 
         // Export PNG / PDF KDP 300 DPI

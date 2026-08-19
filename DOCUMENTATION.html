@@ -110,7 +110,19 @@ This item's backend (AI generation + payments) runs on a <strong>Cloudflare Work
 </ol>
 <p>If you don't want to offer crypto or card payments, simply leave the relevant Worker variables empty — the corresponding button will show a friendly configuration message instead of erroring out.</p>
 
-<h2>4. Customization</h2>
+<h2>4. Personal image upload, upscale &amp; BYOK</h2>
+<p>Buyers who already have a cover illustration (from their own designer or a personal photo) can upload it directly — no AI required. The upload studio (Styles tab) includes a drag-and-drop zone, thumbnail preview with dimensions/file size, an automatic DPI-quality warning for print readiness, zoom/position/fit controls, and style filters (grayscale, sepia, brightness, contrast, blur).</p>
+
+<h3>4.1 Free Canvas upscale</h3>
+<p>A 2× / 4× "Agrandir" (upscale) button is included, using native Canvas interpolation — instant, free, no server or API call involved. This is pixel interpolation, not AI super-resolution; it helps borderline-quality images but won't add real detail to very low-resolution sources.</p>
+
+<h3>4.2 BYOK (Bring Your Own Key)</h3>
+<p>In the Image IA tab, end users can optionally enter their own Gemini API key to generate illustrations directly from their browser, bypassing your site's credit system entirely (useful for power users or a "pro" tier).</p>
+<div class="note">
+<strong>Security note:</strong> the BYOK key is stored in the browser's <code>localStorage</code> and used only for direct client-side calls to Google's API — it is never sent to your Worker or server. This is a common, low-friction pattern, but <code>localStorage</code> is not immune to XSS-based extraction. It's appropriate for a personal/prosumer feature; avoid presenting it as enterprise-grade key storage.
+</div>
+
+<h2>5. Customization</h2>
 <table>
   <tr><th>What</th><th>Where</th></tr>
   <tr><td>Colors, fonts, layout</td><td>Tailwind utility classes directly in <code>index.html</code></td></tr>
@@ -120,16 +132,16 @@ This item's backend (AI generation + payments) runs on a <strong>Cloudflare Work
   <tr><td>Watermark text</td><td><code>.watermark-text</code> elements in <code>index.html</code></td></tr>
 </table>
 
-<h2>5. Rebuilding the Tailwind CSS file</h2>
+<h2>6. Rebuilding the Tailwind CSS file</h2>
 <p>If you add new Tailwind classes not already used in the project, regenerate <code>assets/css/tailwind.min.css</code>:</p>
 <pre>npm install -D tailwindcss@3
 npx tailwindcss -i ./input.css -o ./assets/css/tailwind.min.css --minify</pre>
 <p>(Create a minimal <code>input.css</code> with <code>@tailwind base; @tailwind components; @tailwind utilities;</code> and a <code>tailwind.config.js</code> pointing <code>content</code> at your HTML files.)</p>
 
-<h2>6. Fonts &amp; licensing</h2>
+<h2>7. Fonts &amp; licensing</h2>
 <p>All bundled fonts are licensed under the SIL Open Font License 1.1 (free for commercial use, redistribution allowed). See <code>assets/fonts/LICENSE.txt</code> for details and sources.</p>
 
-<h2>7. Support</h2>
+<h2>8. Support</h2>
 <p>Support is provided through the item's comment section on the marketplace listing. Please include your browser, a description of the issue, and console errors (if any) when reporting a bug. See <code>SUPPORT-POLICY.txt</code> for scope and response times.</p>
 
 </body>
