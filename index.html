@@ -806,10 +806,20 @@
             const spreadView = document.getElementById('spread-view');
             const main3dWrapper = document.getElementById('main-cover-3d-wrapper');
 
+            // Mettre à jour le style actif des 3 boutons de mode
+            ['2d', '3d', 'spread'].forEach(m => {
+                const btn = document.getElementById(`btn-view-${m}`);
+                if (m === mode) {
+                    btn.className = "px-3 py-1.5 text-xs font-medium rounded-md transition flex items-center gap-1.5 bg-indigo-600 text-white";
+                } else {
+                    btn.className = "px-3 py-1.5 text-xs font-medium rounded-md transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200";
+                }
+            });
+
             if (mode === 'spread') {
                 spreadView.classList.remove('hidden');
                 main3dWrapper.classList.add('hidden');
-                document.getElementById('front-cover-spread').innerHTML = singleCover.innerHTML;
+                syncSpreadView();
             } else {
                 spreadView.classList.add('hidden');
                 main3dWrapper.classList.remove('hidden');
@@ -821,6 +831,19 @@
                     singleCover.style.transform = "none";
                 }
             }
+        }
+
+        // Synchronise la vue "Planche complète" en clonant single-cover SANS dupliquer les ID
+        // (une duplication d'ID casserait document.getElementById() utilisé partout ailleurs)
+        function syncSpreadView() {
+            if (state.previewMode !== 'spread') return;
+            const singleCover = document.getElementById('single-cover');
+            const clone = singleCover.cloneNode(true);
+            clone.removeAttribute('id');
+            clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+            const frontSpread = document.getElementById('front-cover-spread');
+            frontSpread.innerHTML = '';
+            frontSpread.appendChild(clone);
         }
 
         function toggleProMode() {
@@ -933,9 +956,7 @@
             document.getElementById('cover-texture').classList.toggle('hidden', !state.showTexture);
             document.getElementById('cover-vignette').classList.toggle('hidden', !state.showVignette);
 
-            if (state.previewMode === 'spread') {
-                document.getElementById('front-cover-spread').innerHTML = document.getElementById('single-cover').innerHTML;
-            }
+            syncSpreadView();
         }
 
         // Application d'un préréglage de genre
